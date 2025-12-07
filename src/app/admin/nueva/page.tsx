@@ -19,7 +19,7 @@ export default function NuevaEvaluacionPage() {
     const searchParams = useSearchParams();
     const preselectedStudentId = searchParams.get('studentId');
 
-    const [students, setStudents] = useState<Student[]>([]);
+    const [students, setStudents] = useState<any[]>([]);
     const [selectedStudentId, setSelectedStudentId] = useState(preselectedStudentId || '');
     const [evaluatorName, setEvaluatorName] = useState('');
     const [evaluationDate, setEvaluationDate] = useState(
@@ -265,8 +265,8 @@ export default function NuevaEvaluacionPage() {
                                 type="button"
                                 onClick={() => setIsPassed(true)}
                                 className={`flex-1 py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all ${isPassed
-                                        ? 'bg-green-500 text-white'
-                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                    ? 'bg-green-500 text-white'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                                     }`}
                             >
                                 <CheckCircle className="w-5 h-5" />
@@ -276,8 +276,8 @@ export default function NuevaEvaluacionPage() {
                                 type="button"
                                 onClick={() => setIsPassed(false)}
                                 className={`flex-1 py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all ${!isPassed
-                                        ? 'bg-red-500 text-white'
-                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                    ? 'bg-red-500 text-white'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                                     }`}
                             >
                                 <XCircle className="w-5 h-5" />
