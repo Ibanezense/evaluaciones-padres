@@ -1,12 +1,28 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// Inicialización lazy del cliente para evitar errores en build time
+let supabaseInstance: SupabaseClient | null = null;
 
-// Solo crear cliente si hay credenciales
-export const supabase = supabaseUrl && supabaseAnonKey
-    ? createClient(supabaseUrl, supabaseAnonKey)
-    : null as any; // Esto causará errores en runtime si no hay credenciales
+function getSupabaseClient(): SupabaseClient {
+    if (!supabaseInstance) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseAnonKey) {
+            throw new Error('Missing Supabase environment variables');
+        }
+
+        supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+    }
+    return supabaseInstance;
+}
+
+// Export como getter para inicialización lazy
+export const supabase = new Proxy({} as SupabaseClient, {
+    get(_, prop) {
+        return (getSupabaseClient() as any)[prop];
+    }
+});
 
 // Tipos basados en el esquema de la base de datos
 export interface Student {
