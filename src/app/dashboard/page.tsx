@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, Student, TrainingControl, TechnicalEvaluation } from '@/lib/supabase';
@@ -224,8 +226,8 @@ export default function DashboardHomePage() {
                         </div>
                         <div className="flex items-center justify-between">
                             <div className={`px-3 py-1 rounded-full text-sm font-medium ${lastEvaluation.is_passed
-                                    ? 'bg-green-500/20 text-green-400'
-                                    : 'bg-yellow-500/20 text-yellow-400'
+                                ? 'bg-green-500/20 text-green-400'
+                                : 'bg-yellow-500/20 text-yellow-400'
                                 }`}>
                                 {lastEvaluation.is_passed ? '✓ Aprobado' : 'En progreso'}
                             </div>
