@@ -2,8 +2,11 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { supabase, Student, Profile } from '@/lib/supabase';
+import { supabase, Student, Profile, Badge, StudentBadge, BADGE_CATEGORIES } from '@/lib/supabase';
 import ImageCropper from '@/components/ImageCropper';
+import BadgeAssignModal from '@/components/BadgeAssignModal';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 import {
     ArrowLeft,
     Save,
@@ -13,7 +16,8 @@ import {
     X,
     Trash2,
     UserCheck,
-    Plus
+    Plus,
+    Award
 } from 'lucide-react';
 
 export default function EditarAlumnoPage() {
@@ -59,9 +63,15 @@ export default function EditarAlumnoPage() {
     const [showCropper, setShowCropper] = useState(false);
     const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
+    // Estados para badges
+    const [studentBadges, setStudentBadges] = useState<(StudentBadge & { badge: Badge })[]>([]);
+    const [loadingBadges, setLoadingBadges] = useState(false);
+    const [showBadgeModal, setShowBadgeModal] = useState(false);
+
     useEffect(() => {
         loadStudent();
         loadProfiles();
+        loadStudentBadges();
     }, [studentId]);
 
     const loadProfiles = async () => {
@@ -70,6 +80,38 @@ export default function EditarAlumnoPage() {
             .select('*')
             .order('first_name');
         setProfiles(data || []);
+    };
+
+    const loadStudentBadges = async () => {
+        try {
+            setLoadingBadges(true);
+            const { data, error } = await supabase
+                .from('student_badges')
+                .select('*, badge:badges(*)')
+                .eq('student_id', studentId)
+                .order('awarded_at', { ascending: false });
+
+            if (error) throw error;
+            setStudentBadges(data || []);
+        } catch (err) {
+            console.error('Error loading student badges:', err);
+        } finally {
+            setLoadingBadges(false);
+        }
+    };
+
+    const handleRemoveBadge = async (studentBadgeId: string) => {
+        try {
+            const { error } = await supabase
+                .from('student_badges')
+                .delete()
+                .eq('id', studentBadgeId);
+
+            if (error) throw error;
+            loadStudentBadges();
+        } catch (err) {
+            console.error('Error removing badge:', err);
+        }
     };
 
     const loadStudent = async () => {
@@ -740,6 +782,82 @@ export default function EditarAlumnoPage() {
                         </div>
                     </div>
 
+                    {/* Badges del Alumno */}
+                    <div className="glass-card p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                <Award className="w-5 h-5 text-primary-500" />
+                                Badges del Alumno
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowBadgeModal(true)}
+                                className="btn btn-secondary py-2 px-3 text-sm"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Asignar
+                            </button>
+                        </div>
+
+                        {loadingBadges ? (
+                            <div className="flex justify-center py-4">
+                                <Loader2 className="w-6 h-6 text-primary-500 animate-spin" />
+                            </div>
+                        ) : studentBadges.length === 0 ? (
+                            <p className="text-slate-400 text-sm text-center py-4">
+                                Este alumno no tiene badges asignados todavía.
+                            </p>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-2">
+                                {studentBadges.map((sb) => (
+                                    <div
+                                        key={sb.id}
+                                        className="bg-slate-800/50 rounded-lg p-3 flex items-center gap-3 group cursor-help"
+                                        title={sb.badge?.description || sb.badge?.name}
+                                    >
+                                        <div
+                                            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                                            style={{
+                                                backgroundColor: sb.badge?.color_hex
+                                                    ? `${sb.badge.color_hex}20`
+                                                    : 'rgba(249, 115, 22, 0.2)'
+                                            }}
+                                        >
+                                            {sb.badge?.icon_url ? (
+                                                <img
+                                                    src={sb.badge.icon_url}
+                                                    alt=""
+                                                    className="w-7 h-7 object-contain"
+                                                />
+                                            ) : (
+                                                <Award
+                                                    className="w-6 h-6"
+                                                    style={{ color: sb.badge?.color_hex || '#f97316' }}
+                                                />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-white text-sm font-medium truncate">
+                                                {sb.badge?.name}
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                {format(parseISO(sb.awarded_at), "d MMM yy", { locale: es })}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveBadge(sb.id)}
+                                            className="p-1 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                                            title="Quitar badge"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Error */}
                     {error && (
                         <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm text-center">
@@ -818,6 +936,19 @@ export default function EditarAlumnoPage() {
                     imageSrc={imageToCrop}
                     onCropComplete={handleCropComplete}
                     onCancel={handleCropCancel}
+                />
+            )}
+
+            {/* Modal de asignar badge */}
+            {showBadgeModal && (
+                <BadgeAssignModal
+                    studentId={studentId}
+                    assignedBadgeIds={studentBadges.map(sb => sb.badge_id)}
+                    onClose={() => setShowBadgeModal(false)}
+                    onAssigned={() => {
+                        setShowBadgeModal(false);
+                        loadStudentBadges();
+                    }}
                 />
             )}
         </main>

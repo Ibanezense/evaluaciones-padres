@@ -3,19 +3,22 @@
 import { TechnicalEvaluation, EVALUATION_CRITERIA } from '@/lib/supabase';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChevronDown, CheckCircle, XCircle, Calendar, User } from 'lucide-react';
+import { ChevronDown, CheckCircle, XCircle, Calendar, User, Pencil } from 'lucide-react';
 import { useState } from 'react';
+import Link from 'next/link';
 
 interface EvaluationHistoryProps {
     evaluations: TechnicalEvaluation[];
     onSelectEvaluation?: (evaluation: TechnicalEvaluation) => void;
     selectedId?: string;
+    isAdmin?: boolean;
 }
 
 export default function EvaluationHistory({
     evaluations,
     onSelectEvaluation,
-    selectedId
+    selectedId,
+    isAdmin = false
 }: EvaluationHistoryProps) {
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -71,8 +74,8 @@ export default function EvaluationHistory({
                         >
                             <div className="flex items-center gap-3">
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${evaluation.is_passed
-                                        ? 'bg-green-500/20 text-green-400'
-                                        : 'bg-red-500/20 text-red-400'
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : 'bg-red-500/20 text-red-400'
                                     }`}>
                                     {evaluation.is_passed ? (
                                         <CheckCircle className="w-5 h-5" />
@@ -160,6 +163,19 @@ export default function EvaluationHistory({
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Botón editar para admin */}
+                                {isAdmin && (
+                                    <div className="mt-4 pt-4 border-t border-slate-700/50">
+                                        <Link
+                                            href={`/admin/editar/${evaluation.id}`}
+                                            className="btn btn-secondary w-full"
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                            Editar Evaluación
+                                        </Link>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

@@ -90,7 +90,7 @@ export default function ControlesPage() {
                 <header className="mb-4">
                     <h1 className="text-xl font-bold text-white flex items-center gap-2">
                         <Target className="w-6 h-6 text-primary-500" />
-                        Controles
+                        Puntajes
                     </h1>
                     {student && (
                         <p className="text-sm text-slate-400">
@@ -104,8 +104,8 @@ export default function ControlesPage() {
                     <button
                         onClick={() => { setMainTab('clasificatorias'); setSubView('stats'); }}
                         className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${mainTab === 'clasificatorias'
-                                ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
-                                : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
+                            ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
+                            : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
                             }`}
                     >
                         <Target className="w-5 h-5" />
@@ -114,8 +114,8 @@ export default function ControlesPage() {
                     <button
                         onClick={() => { setMainTab('duelos'); setSubView('stats'); }}
                         className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${mainTab === 'duelos'
-                                ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
-                                : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
+                            ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
+                            : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
                             }`}
                     >
                         <Swords className="w-5 h-5" />
@@ -131,8 +131,8 @@ export default function ControlesPage() {
                             <button
                                 onClick={() => setSubView('stats')}
                                 className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-1 ${subView === 'stats'
-                                        ? 'bg-primary-500 text-white'
-                                        : 'text-slate-400 hover:text-white'
+                                    ? 'bg-primary-500 text-white'
+                                    : 'text-slate-400 hover:text-white'
                                     }`}
                             >
                                 <TrendingUp className="w-4 h-4" />
@@ -141,8 +141,8 @@ export default function ControlesPage() {
                             <button
                                 onClick={() => setSubView('chart')}
                                 className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-1 ${subView === 'chart'
-                                        ? 'bg-primary-500 text-white'
-                                        : 'text-slate-400 hover:text-white'
+                                    ? 'bg-primary-500 text-white'
+                                    : 'text-slate-400 hover:text-white'
                                     }`}
                             >
                                 <BarChart3 className="w-4 h-4" />
@@ -151,8 +151,8 @@ export default function ControlesPage() {
                             <button
                                 onClick={() => setSubView('history')}
                                 className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-1 ${subView === 'history'
-                                        ? 'bg-primary-500 text-white'
-                                        : 'text-slate-400 hover:text-white'
+                                    ? 'bg-primary-500 text-white'
+                                    : 'text-slate-400 hover:text-white'
                                     }`}
                             >
                                 <List className="w-4 h-4" />
@@ -198,8 +198,8 @@ export default function ControlesPage() {
                             <button
                                 onClick={() => setSubView('stats')}
                                 className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-1 ${subView === 'stats'
-                                        ? 'bg-primary-500 text-white'
-                                        : 'text-slate-400 hover:text-white'
+                                    ? 'bg-primary-500 text-white'
+                                    : 'text-slate-400 hover:text-white'
                                     }`}
                             >
                                 <TrendingUp className="w-4 h-4" />
@@ -208,8 +208,8 @@ export default function ControlesPage() {
                             <button
                                 onClick={() => setSubView('history')}
                                 className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-1 ${subView === 'history'
-                                        ? 'bg-primary-500 text-white'
-                                        : 'text-slate-400 hover:text-white'
+                                    ? 'bg-primary-500 text-white'
+                                    : 'text-slate-400 hover:text-white'
                                     }`}
                             >
                                 <List className="w-4 h-4" />

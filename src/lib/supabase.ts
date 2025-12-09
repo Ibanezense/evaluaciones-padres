@@ -142,6 +142,50 @@ export interface ProfileStudent {
 }
 
 // =============================================
+// MÓDULO DE BADGES
+// =============================================
+
+// Categorías de badges
+export const BADGE_CATEGORIES = {
+    technical: 'Técnica',
+    score_round: 'Puntajes',
+    training: 'Entrenamientos',
+    duel: 'Duelos',
+    consistency: 'Constancia',
+    meta: 'Logros Especiales',
+} as const;
+
+export type BadgeCategory = keyof typeof BADGE_CATEGORIES;
+
+// Interface para badges (catálogo)
+export interface Badge {
+    id: string;
+    code: string;
+    name: string;
+    description: string | null;
+    category: BadgeCategory;
+    icon_url: string;
+    color_hex: string | null;
+    rank_order: number;
+    created_at: string;
+}
+
+// Interface para badges asignados a alumnos
+export interface StudentBadge {
+    id: string;
+    student_id: string;
+    badge_id: string;
+    awarded_at: string;
+    awarded_by: string | null;
+    source: 'manual' | 'auto';
+    context: Record<string, any> | null;
+    created_at: string;
+    // Relaciones opcionales
+    badge?: Badge;
+    awarded_by_profile?: Profile;
+}
+
+// =============================================
 // MÓDULO DE DUELOS
 // =============================================
 

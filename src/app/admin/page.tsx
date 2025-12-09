@@ -25,7 +25,8 @@ import {
     UserCheck,
     Copy,
     Check,
-    Swords
+    Swords,
+    Award
 } from 'lucide-react';
 
 interface ProfileWithStudents extends Profile {
@@ -40,7 +41,7 @@ export default function AdminPage() {
     const [profiles, setProfiles] = useState<ProfileWithStudents[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState<'controls' | 'duels' | 'evaluations' | 'students' | 'tutors'>('controls');
+    const [activeTab, setActiveTab] = useState<'controls' | 'duels' | 'evaluations' | 'students' | 'tutors' | 'badges'>('controls');
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
     useEffect(() => {
@@ -233,6 +234,16 @@ export default function AdminPage() {
                         <UserCheck className="w-4 h-4" />
                         <span className="hidden sm:inline">Tutores</span>
                     </button>
+                    <Link
+                        href="/admin/badges"
+                        className={`flex-1 py-2.5 px-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1 text-xs ${activeTab === 'badges'
+                            ? 'bg-primary-500 text-white'
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            }`}
+                    >
+                        <Award className="w-4 h-4" />
+                        <span className="hidden sm:inline">Badges</span>
+                    </Link>
                 </div>
 
                 {/* Contenido */}

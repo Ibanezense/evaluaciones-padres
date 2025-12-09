@@ -4,9 +4,9 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, Student, TrainingControl, TechnicalEvaluation } from '@/lib/supabase';
+import { supabase, Student, TrainingControl, TechnicalEvaluation, Badge, StudentBadge } from '@/lib/supabase';
 import StudentCard from '@/components/StudentCard';
-import { Loader2, RefreshCw, Target, ClipboardCheck, TrendingUp, Trophy, Calendar } from 'lucide-react';
+import { Loader2, RefreshCw, Target, ClipboardCheck, TrendingUp, Trophy, Calendar, Award, ChevronRight } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -14,6 +14,7 @@ export default function DashboardHomePage() {
     const [student, setStudent] = useState<Student | null>(null);
     const [lastControl, setLastControl] = useState<TrainingControl | null>(null);
     const [lastEvaluation, setLastEvaluation] = useState<TechnicalEvaluation | null>(null);
+    const [recentBadges, setRecentBadges] = useState<(StudentBadge & { badge: Badge })[]>([]);
     const [controlCount, setControlCount] = useState(0);
     const [evaluationCount, setEvaluationCount] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -66,6 +67,16 @@ export default function DashboardHomePage() {
                 setLastEvaluation(evaluations[0]);
             }
             setEvaluationCount(evalsCount || 0);
+
+            // Cargar últimos 5 badges
+            const { data: badgesData } = await supabase
+                .from('student_badges')
+                .select('*, badge:badges(*)')
+                .eq('student_id', studentId)
+                .order('awarded_at', { ascending: false })
+                .limit(5);
+
+            setRecentBadges(badgesData || []);
 
         } catch (err) {
             console.error('Error loading data:', err);
@@ -158,7 +169,7 @@ export default function DashboardHomePage() {
                     >
                         <div className="flex items-center gap-2 mb-2">
                             <Target className="w-5 h-5 text-primary-500" />
-                            <span className="text-sm text-slate-400">Controles</span>
+                            <span className="text-sm text-slate-400">Puntajes</span>
                         </div>
                         <p className="text-2xl font-bold text-white">{controlCount}</p>
                         <p className="text-xs text-slate-500">registros</p>
@@ -175,6 +186,55 @@ export default function DashboardHomePage() {
                         <p className="text-2xl font-bold text-white">{evaluationCount}</p>
                         <p className="text-xs text-slate-500">técnicas</p>
                     </button>
+                </div>
+
+                {/* Últimos logros */}
+                <div
+                    className="glass-card p-4 mb-4 cursor-pointer hover:border-primary-500/50 transition-colors"
+                    onClick={() => router.push('/dashboard/badges')}
+                >
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-medium text-slate-400 flex items-center gap-2">
+                            <Award className="w-4 h-4 text-yellow-500" />
+                            Últimos logros
+                        </h3>
+                        <ChevronRight className="w-4 h-4 text-slate-500" />
+                    </div>
+                    {recentBadges.length > 0 ? (
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                            {recentBadges.map((sb) => (
+                                <div
+                                    key={sb.id}
+                                    className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
+                                    style={{
+                                        backgroundColor: sb.badge?.color_hex
+                                            ? `${sb.badge.color_hex}20`
+                                            : 'rgba(249, 115, 22, 0.2)',
+                                        borderColor: sb.badge?.color_hex || '#f97316',
+                                        borderWidth: '1px'
+                                    }}
+                                    title={sb.badge?.description ? `${sb.badge.name}: ${sb.badge.description}` : sb.badge?.name}
+                                >
+                                    {sb.badge?.icon_url ? (
+                                        <img
+                                            src={sb.badge.icon_url}
+                                            alt={sb.badge.name}
+                                            className="w-8 h-8 object-contain"
+                                        />
+                                    ) : (
+                                        <Award
+                                            className="w-7 h-7"
+                                            style={{ color: sb.badge?.color_hex || '#f97316' }}
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-xs text-slate-500">
+                            Cuando consiga sus primeros badges, aparecerán aquí.
+                        </p>
+                    )}
                 </div>
 
                 {/* Último control */}

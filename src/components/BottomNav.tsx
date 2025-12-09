@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Target, ClipboardCheck, User, Users } from 'lucide-react';
+import { Home, Target, ClipboardCheck, User, Users, Award } from 'lucide-react';
 
 interface BottomNavProps {
     hasMultipleStudents?: boolean;
@@ -13,8 +13,9 @@ export default function BottomNav({ hasMultipleStudents = false }: BottomNavProp
 
     const tabs = [
         { id: 'home', label: 'Inicio', icon: Home, path: '/dashboard' },
-        { id: 'controls', label: 'Controles', icon: Target, path: '/dashboard/controles' },
+        { id: 'controls', label: 'Puntajes', icon: Target, path: '/dashboard/controles' },
         { id: 'evaluations', label: 'Técnica', icon: ClipboardCheck, path: '/dashboard/tecnica' },
+        { id: 'badges', label: 'Badges', icon: Award, path: '/dashboard/badges' },
         { id: 'profile', label: 'Perfil', icon: User, path: '/dashboard/perfil' },
     ];
 
@@ -27,6 +28,7 @@ export default function BottomNav({ hasMultipleStudents = false }: BottomNavProp
         if (pathname === '/dashboard') return 'home';
         if (pathname.includes('/controles')) return 'controls';
         if (pathname.includes('/tecnica')) return 'evaluations';
+        if (pathname.includes('/badges')) return 'badges';
         if (pathname.includes('/perfil')) return 'profile';
         if (pathname.includes('/seleccionar')) return 'switch';
         return 'home';
@@ -69,3 +71,4 @@ export default function BottomNav({ hasMultipleStudents = false }: BottomNavProp
         </nav>
     );
 }
+

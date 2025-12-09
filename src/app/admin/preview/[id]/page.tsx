@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { supabase, Student, TechnicalEvaluation, TrainingControl, Duel, DuelSet } from '@/lib/supabase';
+import { supabase, Student, TechnicalEvaluation, TrainingControl, Duel, DuelSet, Badge, StudentBadge, BADGE_CATEGORIES } from '@/lib/supabase';
 import StudentCard from '@/components/StudentCard';
 import EvaluationRadarChart from '@/components/EvaluationRadarChart';
 import EvaluationHistory from '@/components/EvaluationHistory';
@@ -12,7 +12,10 @@ import TrainingStats from '@/components/TrainingStats';
 import TrainingChart from '@/components/TrainingChart';
 import DuelHistory from '@/components/DuelHistory';
 import DuelStats from '@/components/DuelStats';
-import { ArrowLeft, Loader2, Eye, TrendingUp, Target, ClipboardCheck, Plus, Edit, Swords } from 'lucide-react';
+import BadgeAssignModal from '@/components/BadgeAssignModal';
+import { ArrowLeft, Loader2, Eye, TrendingUp, Target, ClipboardCheck, Plus, Edit, Swords, Award, X } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function PreviewAlumnoPage() {
     const router = useRouter();
@@ -23,10 +26,12 @@ export default function PreviewAlumnoPage() {
     const [evaluations, setEvaluations] = useState<TechnicalEvaluation[]>([]);
     const [controls, setControls] = useState<TrainingControl[]>([]);
     const [duels, setDuels] = useState<(Duel & { sets?: DuelSet[], opponent_student?: Student })[]>([]);
+    const [studentBadges, setStudentBadges] = useState<(StudentBadge & { badge: Badge })[]>([]);
     const [selectedEvaluation, setSelectedEvaluation] = useState<TechnicalEvaluation | null>(null);
     const [showComparison, setShowComparison] = useState(false);
-    const [activeSection, setActiveSection] = useState<'controls' | 'duels' | 'evaluations'>('controls');
+    const [activeSection, setActiveSection] = useState<'controls' | 'duels' | 'evaluations' | 'badges'>('controls');
     const [loading, setLoading] = useState(true);
+    const [showBadgeModal, setShowBadgeModal] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -78,10 +83,32 @@ export default function PreviewAlumnoPage() {
 
             setDuels(duelsData || []);
 
+            // Cargar badges
+            const { data: badgesData } = await supabase
+                .from('student_badges')
+                .select('*, badge:badges(*)')
+                .eq('student_id', studentId)
+                .order('awarded_at', { ascending: false });
+
+            setStudentBadges(badgesData || []);
+
         } catch (err) {
             console.error('Error loading data:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleRemoveBadge = async (studentBadgeId: string) => {
+        try {
+            await supabase
+                .from('student_badges')
+                .delete()
+                .eq('id', studentBadgeId);
+
+            setStudentBadges(prev => prev.filter(sb => sb.id !== studentBadgeId));
+        } catch (err) {
+            console.error('Error removing badge:', err);
         }
     };
 
@@ -218,6 +245,21 @@ export default function PreviewAlumnoPage() {
                             </span>
                         )}
                     </button>
+                    <button
+                        onClick={() => setActiveSection('badges')}
+                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${activeSection === 'badges'
+                            ? 'bg-primary-500 text-white'
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            }`}
+                    >
+                        <Award className="w-5 h-5" />
+                        Badges
+                        {studentBadges.length > 0 && (
+                            <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                                {studentBadges.length}
+                            </span>
+                        )}
+                    </button>
                 </div>
 
                 {/* Contenido según sección activa */}
@@ -267,10 +309,99 @@ export default function PreviewAlumnoPage() {
                             evaluations={evaluations}
                             onSelectEvaluation={setSelectedEvaluation}
                             selectedId={selectedEvaluation?.id}
+                            isAdmin={true}
                         />
                     </div>
                 )}
+
+                {activeSection === 'badges' && (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                <Award className="w-5 h-5 text-primary-500" />
+                                Badges del Alumno
+                            </h3>
+                            <button
+                                onClick={() => setShowBadgeModal(true)}
+                                className="btn btn-primary py-2 px-3 text-sm"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Asignar Badge
+                            </button>
+                        </div>
+
+                        {studentBadges.length === 0 ? (
+                            <div className="glass-card p-8 text-center">
+                                <Award className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                                <p className="text-slate-400">Este alumno no tiene badges asignados</p>
+                                <p className="text-sm text-slate-500 mt-2">
+                                    Usa el botón "Asignar Badge" para agregar logros
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                {studentBadges.map((sb) => (
+                                    <div
+                                        key={sb.id}
+                                        className="glass-card p-4 text-center relative group"
+                                        title={sb.badge?.description || sb.badge?.name}
+                                    >
+                                        <button
+                                            onClick={() => handleRemoveBadge(sb.id)}
+                                            className="absolute top-2 right-2 p-1 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                                            title="Quitar badge"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <div
+                                            className="w-14 h-14 mx-auto rounded-xl flex items-center justify-center mb-3"
+                                            style={{
+                                                backgroundColor: sb.badge?.color_hex
+                                                    ? `${sb.badge.color_hex}20`
+                                                    : 'rgba(249, 115, 22, 0.2)',
+                                                borderColor: sb.badge?.color_hex || '#f97316',
+                                                borderWidth: '2px'
+                                            }}
+                                        >
+                                            {sb.badge?.icon_url ? (
+                                                <img
+                                                    src={sb.badge.icon_url}
+                                                    alt=""
+                                                    className="w-10 h-10 object-contain"
+                                                />
+                                            ) : (
+                                                <Award
+                                                    className="w-8 h-8"
+                                                    style={{ color: sb.badge?.color_hex || '#f97316' }}
+                                                />
+                                            )}
+                                        </div>
+                                        <p className="text-white text-sm font-medium mb-1 line-clamp-2">
+                                            {sb.badge?.name}
+                                        </p>
+                                        <p className="text-xs text-slate-500">
+                                            {format(parseISO(sb.awarded_at), "d MMM yyyy", { locale: es })}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
+
+            {/* Modal para asignar badge */}
+            {showBadgeModal && (
+                <BadgeAssignModal
+                    studentId={studentId}
+                    assignedBadgeIds={studentBadges.map(sb => sb.badge_id)}
+                    onClose={() => setShowBadgeModal(false)}
+                    onAssigned={() => {
+                        setShowBadgeModal(false);
+                        loadData();
+                    }}
+                />
+            )}
         </main>
     );
 }

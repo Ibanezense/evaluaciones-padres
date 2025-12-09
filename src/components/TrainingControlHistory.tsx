@@ -50,7 +50,7 @@ export default function TrainingControlHistory({
             <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                     <Target className="w-5 h-5 text-primary-500" />
-                    Historial de Controles
+                    Historial de Puntajes
                 </h3>
                 <span className="text-sm text-slate-400">
                     {controls.length} registro(s)
