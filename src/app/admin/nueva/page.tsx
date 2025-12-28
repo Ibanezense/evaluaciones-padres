@@ -112,7 +112,7 @@ export default function NuevaEvaluacionPage() {
 
             if (insertError) throw insertError;
 
-            router.push('/admin');
+            router.push(`/admin/preview/${selectedStudentId}`);
         } catch (err) {
             console.error('Error saving evaluation:', err);
             setError('Error al guardar la evaluación');
@@ -133,7 +133,7 @@ export default function NuevaEvaluacionPage() {
 
     return (
         <main className="min-h-screen p-4 pb-8">
-            <div className="max-w-lg mx-auto">
+            <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <header className="flex items-center gap-4 mb-6">
                     <button
@@ -148,184 +148,193 @@ export default function NuevaEvaluacionPage() {
                 </header>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Selector de alumno */}
-                    <div className="glass-card p-4">
-                        <label className="block text-sm font-medium text-slate-300 mb-2">
-                            Alumno
-                        </label>
-                        <select
-                            value={selectedStudentId}
-                            onChange={(e) => setSelectedStudentId(e.target.value)}
-                            className="w-full"
-                            required
-                        >
-                            <option value="">Seleccionar alumno...</option>
-                            {students.map((student) => (
-                                <option key={student.id} value={student.id}>
-                                    {student.first_name} {student.last_name}
-                                </option>
-                            ))}
-                        </select>
-
-                        {selectedStudent && (
-                            <div className="mt-3 flex items-center gap-3 bg-slate-800/50 rounded-lg p-2">
-                                {selectedStudent.photo_url ? (
-                                    <img
-                                        src={selectedStudent.photo_url}
-                                        alt=""
-                                        className="w-10 h-10 rounded-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
-                                        <User className="w-5 h-5 text-slate-400" />
-                                    </div>
-                                )}
-                                <span className="text-white">
-                                    {selectedStudent.first_name} {selectedStudent.last_name}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Datos de la evaluación */}
-                    <div className="glass-card p-4 space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Evaluador
-                            </label>
-                            <input
-                                type="text"
-                                value={evaluatorName}
-                                onChange={(e) => setEvaluatorName(e.target.value)}
-                                placeholder="Nombre del evaluador"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Fecha de evaluación
-                            </label>
-                            <input
-                                type="date"
-                                value={evaluationDate}
-                                onChange={(e) => setEvaluationDate(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    {/* Puntajes */}
-                    <div className="glass-card p-4">
-                        <h3 className="text-lg font-semibold text-white mb-4">
-                            Puntuaciones (0-10)
-                        </h3>
+                    {/* Grid responsivo: 1 columna en móvil, 2 columnas en desktop */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Columna izquierda: Alumno, Datos y Puntuaciones */}
                         <div className="space-y-4">
-                            {Object.entries(EVALUATION_CRITERIA).map(([key, label]) => (
-                                <div key={key}>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className="text-sm text-slate-300">{label}</label>
-                                        <span className="text-lg font-bold text-primary-500">
-                                            {scores[key as EvaluationCriterion]}
+                            {/* Selector de alumno */}
+                            <div className="glass-card p-4">
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    Alumno
+                                </label>
+                                <select
+                                    value={selectedStudentId}
+                                    onChange={(e) => setSelectedStudentId(e.target.value)}
+                                    className="w-full"
+                                    required
+                                >
+                                    <option value="">Seleccionar alumno...</option>
+                                    {students.map((student) => (
+                                        <option key={student.id} value={student.id}>
+                                            {student.first_name} {student.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {selectedStudent && (
+                                    <div className="mt-3 flex items-center gap-3 bg-slate-800/50 rounded-lg p-2">
+                                        {selectedStudent.photo_url ? (
+                                            <img
+                                                src={selectedStudent.photo_url}
+                                                alt=""
+                                                className="w-10 h-10 rounded-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
+                                                <User className="w-5 h-5 text-slate-400" />
+                                            </div>
+                                        )}
+                                        <span className="text-white">
+                                            {selectedStudent.first_name} {selectedStudent.last_name}
                                         </span>
                                     </div>
+                                )}
+                            </div>
+
+                            {/* Datos de la evaluación */}
+                            <div className="glass-card p-4 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        Evaluador
+                                    </label>
                                     <input
-                                        type="range"
-                                        min="0"
-                                        max="10"
-                                        value={scores[key as EvaluationCriterion]}
-                                        onChange={(e) => handleScoreChange(
-                                            key as EvaluationCriterion,
-                                            parseInt(e.target.value)
-                                        )}
-                                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                                        type="text"
+                                        value={evaluatorName}
+                                        onChange={(e) => setEvaluatorName(e.target.value)}
+                                        placeholder="Nombre del evaluador"
+                                        required
                                     />
                                 </div>
-                            ))}
-                        </div>
 
-                        {/* Promedio */}
-                        <div className="mt-6 pt-4 border-t border-slate-700">
-                            <div className="flex justify-between items-center">
-                                <span className="text-slate-300">Promedio</span>
-                                <span className="text-2xl font-bold text-primary-500">
-                                    {calculateAverage().toFixed(1)}
-                                </span>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        Fecha de evaluación
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={evaluationDate}
+                                        onChange={(e) => setEvaluationDate(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Puntajes */}
+                            <div className="glass-card p-4">
+                                <h3 className="text-lg font-semibold text-white mb-4">
+                                    Puntuaciones (0-10)
+                                </h3>
+                                <div className="space-y-4">
+                                    {Object.entries(EVALUATION_CRITERIA).map(([key, label]) => (
+                                        <div key={key}>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <label className="text-sm text-slate-300">{label}</label>
+                                                <span className="text-lg font-bold text-primary-500">
+                                                    {scores[key as EvaluationCriterion]}
+                                                </span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="10"
+                                                value={scores[key as EvaluationCriterion]}
+                                                onChange={(e) => handleScoreChange(
+                                                    key as EvaluationCriterion,
+                                                    parseInt(e.target.value)
+                                                )}
+                                                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Promedio */}
+                                <div className="mt-6 pt-4 border-t border-slate-700">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-slate-300">Promedio</span>
+                                        <span className="text-2xl font-bold text-primary-500">
+                                            {calculateAverage().toFixed(1)}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> {/* Fin columna izquierda */}
+
+                        {/* Columna derecha: Estado y Notas */}
+                        <div className="space-y-4">
+                            {/* Estado de aprobación */}
+                            <div className="glass-card p-4">
+                                <label className="block text-sm font-medium text-slate-300 mb-3">
+                                    Estado de la evaluación
+                                </label>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPassed(true)}
+                                        className={`flex-1 py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all ${isPassed
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                            }`}
+                                    >
+                                        <CheckCircle className="w-5 h-5" />
+                                        Aprobado
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPassed(false)}
+                                        className={`flex-1 py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all ${!isPassed
+                                            ? 'bg-red-500 text-white'
+                                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                            }`}
+                                    >
+                                        <XCircle className="w-5 h-5" />
+                                        Reprobado
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Notas */}
+                            <div className="glass-card p-4 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        Fortalezas
+                                    </label>
+                                    <textarea
+                                        value={strengths}
+                                        onChange={(e) => setStrengths(e.target.value)}
+                                        placeholder="Aspectos positivos del alumno..."
+                                        rows={2}
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        Áreas de mejora
+                                    </label>
+                                    <textarea
+                                        value={areasToImprove}
+                                        onChange={(e) => setAreasToImprove(e.target.value)}
+                                        placeholder="Aspectos a trabajar..."
+                                        rows={2}
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        Objetivos (opcional)
+                                    </label>
+                                    <textarea
+                                        value={goals}
+                                        onChange={(e) => setGoals(e.target.value)}
+                                        placeholder="Metas para la próxima evaluación..."
+                                        rows={2}
+                                    />
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    {/* Estado de aprobación */}
-                    <div className="glass-card p-4">
-                        <label className="block text-sm font-medium text-slate-300 mb-3">
-                            Estado de la evaluación
-                        </label>
-                        <div className="flex gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setIsPassed(true)}
-                                className={`flex-1 py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all ${isPassed
-                                    ? 'bg-green-500 text-white'
-                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                    }`}
-                            >
-                                <CheckCircle className="w-5 h-5" />
-                                Aprobado
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setIsPassed(false)}
-                                className={`flex-1 py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all ${!isPassed
-                                    ? 'bg-red-500 text-white'
-                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                    }`}
-                            >
-                                <XCircle className="w-5 h-5" />
-                                Pendiente
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Notas */}
-                    <div className="glass-card p-4 space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Fortalezas
-                            </label>
-                            <textarea
-                                value={strengths}
-                                onChange={(e) => setStrengths(e.target.value)}
-                                placeholder="Aspectos positivos del alumno..."
-                                rows={2}
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Áreas de mejora
-                            </label>
-                            <textarea
-                                value={areasToImprove}
-                                onChange={(e) => setAreasToImprove(e.target.value)}
-                                placeholder="Aspectos a trabajar..."
-                                rows={2}
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Objetivos (opcional)
-                            </label>
-                            <textarea
-                                value={goals}
-                                onChange={(e) => setGoals(e.target.value)}
-                                placeholder="Metas para la próxima evaluación..."
-                                rows={2}
-                            />
-                        </div>
-                    </div>
+                    </div> {/* Fin del grid */}
 
                     {/* Error */}
                     {error && (

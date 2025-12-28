@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, Profile } from '@/lib/supabase';
 import ImageCropper from '@/components/ImageCropper';
+import CreateTutorModal from '@/components/CreateTutorModal';
 import {
     ArrowLeft,
     Save,
@@ -41,10 +42,7 @@ export default function NuevoAlumnoPage() {
     // Datos del tutor
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [selectedTutorId, setSelectedTutorId] = useState<string>('');
-    const [showNewTutorForm, setShowNewTutorForm] = useState(false);
-    const [newTutorName, setNewTutorName] = useState('');
-    const [newTutorEmail, setNewTutorEmail] = useState('');
-    const [newTutorPhone, setNewTutorPhone] = useState('');
+    const [showTutorModal, setShowTutorModal] = useState(false);
 
     const [saving, setSaving] = useState(false);
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -167,59 +165,13 @@ export default function NuevoAlumnoPage() {
         }
     };
 
-    // Crear nuevo tutor
-    const createNewTutor = async (): Promise<string | null> => {
-        if (!newTutorName.trim()) {
-            setError('Ingresa el nombre del tutor');
-            return null;
-        }
-
-        try {
-            // Generar UUID para el nuevo perfil
-            const newProfileId = crypto.randomUUID();
-
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert({
-                    id: newProfileId,
-                    first_name: newTutorName.split(' ')[0] || newTutorName,
-                    last_name: newTutorName.split(' ').slice(1).join(' ') || null,
-                    email: newTutorEmail.trim() || null,
-                    phone: newTutorPhone.trim() || null,
-                    role: 'PADRE',
-                    // access_code se genera automáticamente con el trigger
-                });
-
-            if (profileError) {
-                console.error('Error creating profile:', profileError);
-                setError('Error al crear el tutor');
-                return null;
-            }
-
-            return newProfileId;
-        } catch (err) {
-            console.error('Error:', err);
-            return null;
-        }
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
         setError('');
 
         try {
-            let tutorId = selectedTutorId;
-
-            // Si está creando nuevo tutor
-            if (showNewTutorForm) {
-                const newId = await createNewTutor();
-                if (!newId) {
-                    setSaving(false);
-                    return;
-                }
-                tutorId = newId;
-            }
+            const tutorId = selectedTutorId;
 
             if (!tutorId) {
                 setError('Selecciona o crea un tutor');
@@ -355,108 +307,44 @@ export default function NuevoAlumnoPage() {
                             Tutor / Padre
                         </h3>
 
-                        {!showNewTutorForm ? (
-                            <>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                                        Seleccionar tutor existente
-                                    </label>
-                                    <div className="relative">
-                                        <select
-                                            value={selectedTutorId}
-                                            onChange={(e) => setSelectedTutorId(e.target.value)}
-                                            className="w-full"
-                                        >
-                                            <option value="">-- Seleccionar tutor --</option>
-                                            {profiles.map((p) => (
-                                                <option key={p.id} value={p.id}>
-                                                    {p.first_name || p.full_name || 'Sin nombre'} {p.last_name || ''}
-                                                    {p.access_code ? ` (${p.access_code})` : ''}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="relative">
-                                    <div className="absolute inset-0 flex items-center">
-                                        <div className="w-full border-t border-slate-600"></div>
-                                    </div>
-                                    <div className="relative flex justify-center">
-                                        <span className="bg-slate-800 px-3 text-sm text-slate-400">o</span>
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowNewTutorForm(true);
-                                        setSelectedTutorId('');
-                                    }}
-                                    className="btn btn-secondary w-full"
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                Seleccionar tutor existente
+                            </label>
+                            <div className="relative">
+                                <select
+                                    value={selectedTutorId}
+                                    onChange={(e) => setSelectedTutorId(e.target.value)}
+                                    className="w-full"
                                 >
-                                    <Plus className="w-4 h-4" />
-                                    Crear nuevo tutor
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-2">
-                                            Nombre completo *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={newTutorName}
-                                            onChange={(e) => setNewTutorName(e.target.value)}
-                                            placeholder="Nombre y apellido del tutor"
-                                            required={showNewTutorForm}
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                                Email
-                                            </label>
-                                            <input
-                                                type="email"
-                                                value={newTutorEmail}
-                                                onChange={(e) => setNewTutorEmail(e.target.value)}
-                                                placeholder="email@ejemplo.com"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                                Teléfono
-                                            </label>
-                                            <input
-                                                type="tel"
-                                                value={newTutorPhone}
-                                                onChange={(e) => setNewTutorPhone(e.target.value)}
-                                                placeholder="+51 999 999 999"
-                                            />
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-slate-400">
-                                        El código de acceso se generará automáticamente
-                                    </p>
-                                </div>
+                                    <option value="">-- Seleccionar tutor --</option>
+                                    {profiles.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.first_name || p.full_name || 'Sin nombre'} {p.last_name || ''}
+                                            {p.access_code ? ` (${p.access_code})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowNewTutorForm(false);
-                                        setNewTutorName('');
-                                        setNewTutorEmail('');
-                                        setNewTutorPhone('');
-                                    }}
-                                    className="text-sm text-slate-400 hover:text-white"
-                                >
-                                    ← Volver a seleccionar tutor existente
-                                </button>
-                            </>
-                        )}
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-slate-600"></div>
+                            </div>
+                            <div className="relative flex justify-center">
+                                <span className="bg-slate-800 px-3 text-sm text-slate-400">o</span>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setShowTutorModal(true)}
+                            className="btn btn-secondary w-full"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Crear nuevo tutor
+                        </button>
                     </div>
 
                     {/* Datos personales */}
@@ -678,6 +566,20 @@ export default function NuevoAlumnoPage() {
                     imageSrc={imageToCrop}
                     onCropComplete={handleCropComplete}
                     onCancel={handleCropCancel}
+                />
+            )}
+
+            {/* Modal de creación de tutor */}
+            {showTutorModal && (
+                <CreateTutorModal
+                    onClose={() => setShowTutorModal(false)}
+                    onSuccess={(newTutor) => {
+                        setProfiles(prev => [...prev, newTutor].sort((a, b) =>
+                            (a.first_name || '').localeCompare(b.first_name || '')
+                        ));
+                        setSelectedTutorId(newTutor.id);
+                        setShowTutorModal(false);
+                    }}
                 />
             )}
         </main>

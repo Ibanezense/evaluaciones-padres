@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { supabase, Student, TechnicalEvaluation, TrainingControl, Duel, DuelSet, Badge, StudentBadge, BADGE_CATEGORIES } from '@/lib/supabase';
+import { supabase, Student, TechnicalEvaluation, TrainingControl, Duel, DuelSet, Badge, StudentBadge, BADGE_CATEGORIES, MEMBERSHIP_STATUS, ClassAttendance } from '@/lib/supabase';
 import StudentCard from '@/components/StudentCard';
 import EvaluationRadarChart from '@/components/EvaluationRadarChart';
 import EvaluationHistory from '@/components/EvaluationHistory';
@@ -13,7 +13,9 @@ import TrainingChart from '@/components/TrainingChart';
 import DuelHistory from '@/components/DuelHistory';
 import DuelStats from '@/components/DuelStats';
 import BadgeAssignModal from '@/components/BadgeAssignModal';
-import { ArrowLeft, Loader2, Eye, TrendingUp, Target, ClipboardCheck, Plus, Edit, Swords, Award, X } from 'lucide-react';
+import StudentFormModal from '@/components/StudentFormModal';
+import AttendanceCardAdmin from '@/components/AttendanceCardAdmin';
+import { ArrowLeft, Loader2, Eye, TrendingUp, Target, ClipboardCheck, Plus, Edit, Swords, Award, X, Calendar, Hash, CalendarClock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -29,9 +31,11 @@ export default function PreviewAlumnoPage() {
     const [studentBadges, setStudentBadges] = useState<(StudentBadge & { badge: Badge })[]>([]);
     const [selectedEvaluation, setSelectedEvaluation] = useState<TechnicalEvaluation | null>(null);
     const [showComparison, setShowComparison] = useState(false);
-    const [activeSection, setActiveSection] = useState<'controls' | 'duels' | 'evaluations' | 'badges'>('controls');
+    const [activeSection, setActiveSection] = useState<'controls' | 'duels' | 'evaluations' | 'badges' | 'attendance'>('controls');
     const [loading, setLoading] = useState(true);
     const [showBadgeModal, setShowBadgeModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [attendances, setAttendances] = useState<ClassAttendance[]>([]);
 
     useEffect(() => {
         loadData();
@@ -92,6 +96,15 @@ export default function PreviewAlumnoPage() {
 
             setStudentBadges(badgesData || []);
 
+            // Cargar asistencias
+            const { data: attendancesData } = await supabase
+                .from('class_attendances')
+                .select('*')
+                .eq('student_id', studentId)
+                .order('class_date', { ascending: true });
+
+            setAttendances(attendancesData || []);
+
         } catch (err) {
             console.error('Error loading data:', err);
         } finally {
@@ -141,7 +154,8 @@ export default function PreviewAlumnoPage() {
 
     return (
         <main className="min-h-screen p-4 pb-8">
-            <div className="max-w-4xl mx-auto">
+            {/* Container: mobile centrado, desktop usa todo el ancho */}
+            <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <header className="flex items-center justify-between mb-6">
                     <button
@@ -152,9 +166,18 @@ export default function PreviewAlumnoPage() {
                         <span className="hidden sm:inline">Volver</span>
                     </button>
 
-                    <div className="flex items-center gap-2 bg-primary-500/20 text-primary-400 px-3 py-1.5 rounded-full text-sm">
-                        <Eye className="w-4 h-4" />
-                        Vista Previa
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 bg-primary-500/20 text-primary-400 px-3 py-1.5 rounded-full text-sm">
+                            <Eye className="w-4 h-4" />
+                            Vista Previa
+                        </div>
+                        <button
+                            onClick={() => setShowEditModal(true)}
+                            className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-full text-sm transition-colors"
+                        >
+                            <Edit className="w-4 h-4" />
+                            Editar
+                        </button>
                     </div>
                 </header>
 
@@ -197,6 +220,37 @@ export default function PreviewAlumnoPage() {
 
                 {/* Tarjeta del alumno */}
                 <StudentCard student={student} />
+
+                {/* Información de Membresía */}
+                <div className="glass-card p-4 mt-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className={`px-3 py-1 rounded-full text-sm font-medium ${student.membership_status === 'active'
+                                ? 'bg-green-500/20 text-green-400'
+                                : student.membership_status === 'debt'
+                                    ? 'bg-red-500/20 text-red-400'
+                                    : 'bg-slate-600/50 text-slate-400'
+                                }`}>
+                                {MEMBERSHIP_STATUS[student.membership_status] || 'Sin estado'}
+                            </div>
+                            {student.membership_start_date && (
+                                <div className="flex items-center gap-1 text-sm text-slate-400">
+                                    <Calendar className="w-4 h-4" />
+                                    Desde: {format(parseISO(student.membership_start_date), "d MMM yyyy", { locale: es })}
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="text-sm">
+                                <span className="text-slate-400">Clases: </span>
+                                <span className={`font-bold ${student.remaining_classes <= 2 ? 'text-red-400' : 'text-primary-400'}`}>
+                                    {student.remaining_classes}
+                                </span>
+                                <span className="text-slate-500">/{student.total_classes}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Tabs de sección */}
                 <div className="flex gap-2 my-6">
@@ -257,6 +311,21 @@ export default function PreviewAlumnoPage() {
                         {studentBadges.length > 0 && (
                             <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
                                 {studentBadges.length}
+                            </span>
+                        )}
+                    </button>
+                    <button
+                        onClick={() => setActiveSection('attendance')}
+                        className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${activeSection === 'attendance'
+                            ? 'bg-primary-500 text-white'
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            }`}
+                    >
+                        <CalendarClock className="w-5 h-5" />
+                        Asist.
+                        {attendances.length > 0 && (
+                            <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                                {attendances.length}
                             </span>
                         )}
                     </button>
@@ -388,6 +457,78 @@ export default function PreviewAlumnoPage() {
                         )}
                     </div>
                 )}
+
+                {/* Sección Asistencia */}
+                {activeSection === 'attendance' && (
+                    <div className="space-y-4">
+                        {/* Header con botón agregar */}
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-white">
+                                Asistencia ({student.remaining_classes}/{student.total_classes} restantes)
+                            </h3>
+                            <button
+                                onClick={async () => {
+                                    const today = new Date().toISOString().split('T')[0];
+                                    const { data, error } = await supabase
+                                        .from('class_attendances')
+                                        .insert({
+                                            student_id: studentId,
+                                            class_date: today,
+                                            status: 'reserved'
+                                        })
+                                        .select()
+                                        .single();
+
+                                    if (!error && data) {
+                                        setAttendances(prev => [...prev, data].sort((a, b) =>
+                                            new Date(a.class_date).getTime() - new Date(b.class_date).getTime()
+                                        ));
+                                    }
+                                }}
+                                className="btn btn-primary text-sm"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Agregar Clase
+                            </button>
+                        </div>
+
+                        {/* Grid de cards */}
+                        {attendances.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {attendances.map((attendance) => (
+                                    <AttendanceCardAdmin
+                                        key={attendance.id}
+                                        attendance={attendance}
+                                        onUpdate={(updated) => {
+                                            setAttendances(prev => prev.map(a =>
+                                                a.id === updated.id ? updated : a
+                                            ));
+                                        }}
+                                        onDelete={(id) => {
+                                            setAttendances(prev => prev.filter(a => a.id !== id));
+                                        }}
+                                        onRemainingClassesChange={(delta) => {
+                                            if (student) {
+                                                setStudent({
+                                                    ...student,
+                                                    remaining_classes: Math.max(0, student.remaining_classes + delta)
+                                                });
+                                            }
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="glass-card p-8 text-center">
+                                <CalendarClock className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                                <p className="text-slate-400">No hay clases programadas</p>
+                                <p className="text-xs text-slate-500 mt-1">
+                                    Agrega clases para registrar asistencia
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Modal para asignar badge */}
@@ -402,6 +543,17 @@ export default function PreviewAlumnoPage() {
                     }}
                 />
             )}
+
+            {/* Modal para editar alumno */}
+            <StudentFormModal
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                onSaved={(updatedStudent) => {
+                    setStudent(updatedStudent);
+                    setShowEditModal(false);
+                }}
+                student={student}
+            />
         </main>
     );
 }

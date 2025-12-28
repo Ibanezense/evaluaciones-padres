@@ -232,7 +232,7 @@ export default function NuevoDueloPage() {
 
             if (setsError) throw setsError;
 
-            router.push('/admin');
+            router.push(`/admin/preview/${selectedStudentId}`);
         } catch (err: any) {
             console.error('Error creating duel:', err);
             setError('Error al guardar el duelo: ' + err.message);
@@ -254,7 +254,7 @@ export default function NuevoDueloPage() {
 
     return (
         <main className="min-h-screen p-4 pb-8">
-            <div className="max-w-lg mx-auto">
+            <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <header className="flex items-center gap-4 mb-6">
                     <button
@@ -273,188 +273,191 @@ export default function NuevoDueloPage() {
                 </header>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Selección de alumno */}
-                    <div className="glass-card p-4">
-                        <label className="block text-sm font-medium text-slate-300 mb-2">
-                            Nuestro Arquero *
-                        </label>
-                        <select
-                            value={selectedStudentId}
-                            onChange={(e) => setSelectedStudentId(e.target.value)}
-                            required
-                        >
-                            <option value="">Selecciona un alumno</option>
-                            {students.map((student) => (
-                                <option key={student.id} value={student.id}>
-                                    {student.first_name} {student.last_name}
-                                </option>
-                            ))}
-                        </select>
+                    {/* Grid responsivo: 1 columna en móvil, 2 columnas en desktop */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Selección de alumno */}
+                        <div className="glass-card p-4">
+                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                Nuestro Arquero *
+                            </label>
+                            <select
+                                value={selectedStudentId}
+                                onChange={(e) => setSelectedStudentId(e.target.value)}
+                                required
+                            >
+                                <option value="">Selecciona un alumno</option>
+                                {students.map((student) => (
+                                    <option key={student.id} value={student.id}>
+                                        {student.first_name} {student.last_name}
+                                    </option>
+                                ))}
+                            </select>
 
-                        {selectedStudent && (
-                            <div className="flex items-center gap-3 mt-3 p-3 bg-slate-800/50 rounded-lg">
-                                {selectedStudent.photo_url ? (
-                                    <img
-                                        src={selectedStudent.photo_url}
-                                        alt=""
-                                        className="w-10 h-10 rounded-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center">
-                                        <User className="w-5 h-5 text-primary-500" />
+                            {selectedStudent && (
+                                <div className="flex items-center gap-3 mt-3 p-3 bg-slate-800/50 rounded-lg">
+                                    {selectedStudent.photo_url ? (
+                                        <img
+                                            src={selectedStudent.photo_url}
+                                            alt=""
+                                            className="w-10 h-10 rounded-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center">
+                                            <User className="w-5 h-5 text-primary-500" />
+                                        </div>
+                                    )}
+                                    <div className="text-sm">
+                                        <p className="text-white">{selectedStudent.discipline}</p>
+                                        <p className="text-slate-400">{selectedStudent.level}</p>
                                     </div>
-                                )}
-                                <div className="text-sm">
-                                    <p className="text-white">{selectedStudent.discipline}</p>
-                                    <p className="text-slate-400">{selectedStudent.level}</p>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Oponente */}
-                    <div className="glass-card p-4 space-y-4">
-                        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                            <User className="w-5 h-5 text-red-500" />
-                            Oponente
-                        </h3>
-
-                        <div className="flex gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setOpponentType('external')}
-                                className={`flex-1 py-2 rounded-lg font-medium transition-colors ${opponentType === 'external'
-                                        ? 'bg-primary-500 text-white'
-                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                    }`}
-                            >
-                                Externo
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setOpponentType('internal')}
-                                className={`flex-1 py-2 rounded-lg font-medium transition-colors ${opponentType === 'internal'
-                                        ? 'bg-primary-500 text-white'
-                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                    }`}
-                            >
-                                De la Academia
-                            </button>
+                            )}
                         </div>
 
-                        {opponentType === 'external' ? (
-                            <input
-                                type="text"
-                                value={opponentName}
-                                onChange={(e) => setOpponentName(e.target.value)}
-                                placeholder="Nombre del oponente"
-                            />
-                        ) : (
-                            <select
-                                value={opponentStudentId}
-                                onChange={(e) => setOpponentStudentId(e.target.value)}
-                            >
-                                <option value="">Selecciona oponente</option>
-                                {students
-                                    .filter(s => s.id !== selectedStudentId)
-                                    .map((student) => (
-                                        <option key={student.id} value={student.id}>
-                                            {student.first_name} {student.last_name}
-                                        </option>
-                                    ))}
-                            </select>
-                        )}
-                    </div>
+                        {/* Oponente */}
+                        <div className="glass-card p-4 space-y-4">
+                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                <User className="w-5 h-5 text-red-500" />
+                                Oponente
+                            </h3>
 
-                    {/* Tipo de evento */}
-                    <div className="glass-card p-4 space-y-4">
-                        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                            <Award className="w-5 h-5 text-yellow-500" />
-                            Tipo de Evento
-                        </h3>
-
-                        <div className="grid grid-cols-2 gap-2">
-                            {(Object.entries(EVENT_TYPES) as [EventType, string][]).map(([key, label]) => (
+                            <div className="flex gap-2">
                                 <button
-                                    key={key}
                                     type="button"
-                                    onClick={() => setEventType(key)}
-                                    className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${eventType === key
+                                    onClick={() => setOpponentType('external')}
+                                    className={`flex-1 py-2 rounded-lg font-medium transition-colors ${opponentType === 'external'
+                                        ? 'bg-primary-500 text-white'
+                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                        }`}
+                                >
+                                    Externo
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setOpponentType('internal')}
+                                    className={`flex-1 py-2 rounded-lg font-medium transition-colors ${opponentType === 'internal'
+                                        ? 'bg-primary-500 text-white'
+                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                        }`}
+                                >
+                                    De la Academia
+                                </button>
+                            </div>
+
+                            {opponentType === 'external' ? (
+                                <input
+                                    type="text"
+                                    value={opponentName}
+                                    onChange={(e) => setOpponentName(e.target.value)}
+                                    placeholder="Nombre del oponente"
+                                />
+                            ) : (
+                                <select
+                                    value={opponentStudentId}
+                                    onChange={(e) => setOpponentStudentId(e.target.value)}
+                                >
+                                    <option value="">Selecciona oponente</option>
+                                    {students
+                                        .filter(s => s.id !== selectedStudentId)
+                                        .map((student) => (
+                                            <option key={student.id} value={student.id}>
+                                                {student.first_name} {student.last_name}
+                                            </option>
+                                        ))}
+                                </select>
+                            )}
+                        </div>
+
+                        {/* Tipo de evento */}
+                        <div className="glass-card p-4 space-y-4">
+                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                <Award className="w-5 h-5 text-yellow-500" />
+                                Tipo de Evento
+                            </h3>
+
+                            <div className="grid grid-cols-2 gap-2">
+                                {(Object.entries(EVENT_TYPES) as [EventType, string][]).map(([key, label]) => (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => setEventType(key)}
+                                        className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${eventType === key
                                             ? key === 'training'
                                                 ? 'bg-primary-500 text-white'
                                                 : 'bg-yellow-500 text-black'
                                             : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                        }`}
-                                >
-                                    {label}
-                                </button>
-                            ))}
-                        </div>
+                                            }`}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
 
-                        {isTournament && (
-                            <div className="space-y-3 pt-3 border-t border-slate-700">
-                                <input
-                                    type="text"
-                                    value={tournamentName}
-                                    onChange={(e) => setTournamentName(e.target.value)}
-                                    placeholder="Nombre del torneo *"
-                                />
+                            {isTournament && (
+                                <div className="space-y-3 pt-3 border-t border-slate-700">
+                                    <input
+                                        type="text"
+                                        value={tournamentName}
+                                        onChange={(e) => setTournamentName(e.target.value)}
+                                        placeholder="Nombre del torneo *"
+                                    />
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-xs text-slate-400 mb-1">Etapa</label>
-                                        <select
-                                            value={tournamentStage}
-                                            onChange={(e) => setTournamentStage(e.target.value as TournamentStage)}
-                                        >
-                                            <option value="">Seleccionar</option>
-                                            {(Object.entries(TOURNAMENT_STAGES) as [TournamentStage, string][]).map(([key, label]) => (
-                                                <option key={key} value={key}>{label}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-slate-400 mb-1">Posición Final</label>
-                                        <input
-                                            type="number"
-                                            value={tournamentPosition}
-                                            onChange={(e) => setTournamentPosition(e.target.value === '' ? '' : parseInt(e.target.value))}
-                                            min="1"
-                                            placeholder="Ej: 1"
-                                        />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs text-slate-400 mb-1">Etapa</label>
+                                            <select
+                                                value={tournamentStage}
+                                                onChange={(e) => setTournamentStage(e.target.value as TournamentStage)}
+                                            >
+                                                <option value="">Seleccionar</option>
+                                                {(Object.entries(TOURNAMENT_STAGES) as [TournamentStage, string][]).map(([key, label]) => (
+                                                    <option key={key} value={key}>{label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-slate-400 mb-1">Posición Final</label>
+                                            <input
+                                                type="number"
+                                                value={tournamentPosition}
+                                                onChange={(e) => setTournamentPosition(e.target.value === '' ? '' : parseInt(e.target.value))}
+                                                min="1"
+                                                placeholder="Ej: 1"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
 
-                    {/* Fecha y distancia */}
-                    <div className="glass-card p-4 space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Fecha *</label>
-                                <input
-                                    type="date"
-                                    value={duelDate}
-                                    onChange={(e) => setDuelDate(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Distancia *</label>
-                                <select
-                                    value={distance}
-                                    onChange={(e) => setDistance(parseInt(e.target.value))}
-                                >
-                                    {DISTANCES.map((d) => (
-                                        <option key={d} value={d}>{d} metros</option>
-                                    ))}
-                                </select>
+                        {/* Fecha y distancia */}
+                        <div className="glass-card p-4 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Fecha *</label>
+                                    <input
+                                        type="date"
+                                        value={duelDate}
+                                        onChange={(e) => setDuelDate(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Distancia *</label>
+                                    <select
+                                        value={distance}
+                                        onChange={(e) => setDistance(parseInt(e.target.value))}
+                                    >
+                                        {DISTANCES.map((d) => (
+                                            <option key={d} value={d}>{d} metros</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </div> {/* Fin del grid */}
 
-                    {/* Sets */}
+                    {/* Sets - fuera del grid, ancho completo */}
                     <div className="glass-card p-4 space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold text-white flex items-center gap-2">

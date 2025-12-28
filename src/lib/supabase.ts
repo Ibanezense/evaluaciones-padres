@@ -24,6 +24,15 @@ export const supabase = new Proxy({} as SupabaseClient, {
     }
 });
 
+// Tipos de arco
+export const BOW_TYPE = {
+    none: 'Sin Arco',
+    own: 'Arco Propio',
+    assigned: 'Arco Asignado',
+} as const;
+
+export type BowType = keyof typeof BOW_TYPE;
+
 // Tipos basados en el esquema de la base de datos
 export interface Student {
     id: string;
@@ -36,11 +45,50 @@ export interface Student {
     level: string;
     discipline: 'RECURVO' | 'COMPUESTO';
     assigned_distance: number;
-    own_equipment: boolean;
+    own_equipment: boolean; // @deprecated - usar bow_type
+    bow_type: BowType;
     is_active: boolean;
     access_code?: string;
     dominant_eye: string | null;
     dominant_hand: string | null;
+    // Campos de membresía
+    membership_status: MembershipStatus;
+    membership_start_date: string | null;
+    total_classes: number;
+    remaining_classes: number;
+}
+
+// Estados de membresía
+export const MEMBERSHIP_STATUS = {
+    active: 'Activo',
+    inactive: 'Inactivo',
+    debt: 'En Deuda',
+} as const;
+
+export type MembershipStatus = keyof typeof MEMBERSHIP_STATUS;
+
+// Estados de asistencia
+export const ATTENDANCE_STATUS = {
+    reserved: 'Reservada',
+    attended: 'Asistió',
+    missed: 'Faltó',
+    cancelled: 'Cancelada',
+} as const;
+
+export type AttendanceStatus = keyof typeof ATTENDANCE_STATUS;
+
+// Interface para asistencias
+export interface ClassAttendance {
+    id: string;
+    student_id: string;
+    class_date: string;
+    class_time: string | null;
+    status: AttendanceStatus;
+    notes: string | null;
+    created_at: string;
+    updated_at: string;
+    // Relaciones opcionales
+    student?: Student;
 }
 
 export interface TechnicalEvaluation {

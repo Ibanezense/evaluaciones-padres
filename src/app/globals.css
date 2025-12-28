@@ -61,6 +61,8 @@ body {
 input[type="text"],
 input[type="number"],
 input[type="date"],
+input[type="email"],
+input[type="tel"],
 textarea,
 select {
   background: rgba(30, 41, 59, 0.8);

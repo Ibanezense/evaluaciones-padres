@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { supabase, Student, Profile, Badge, StudentBadge, BADGE_CATEGORIES } from '@/lib/supabase';
+import { supabase, Student, Profile, Badge, StudentBadge, BADGE_CATEGORIES, MEMBERSHIP_STATUS, MembershipStatus } from '@/lib/supabase';
 import ImageCropper from '@/components/ImageCropper';
+import CreateTutorModal from '@/components/CreateTutorModal';
 import BadgeAssignModal from '@/components/BadgeAssignModal';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -44,14 +45,17 @@ export default function EditarAlumnoPage() {
     const [medicalNotes, setMedicalNotes] = useState('');
     const [isActive, setIsActive] = useState(true);
 
+    // Membresía
+    const [membershipStatus, setMembershipStatus] = useState<MembershipStatus>('active');
+    const [membershipStartDate, setMembershipStartDate] = useState('');
+    const [totalClasses, setTotalClasses] = useState(0);
+    const [remainingClasses, setRemainingClasses] = useState(0);
+
     // Tutor
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [selectedTutorId, setSelectedTutorId] = useState<string>('');
     const [originalTutorId, setOriginalTutorId] = useState<string>('');
-    const [showNewTutorForm, setShowNewTutorForm] = useState(false);
-    const [newTutorName, setNewTutorName] = useState('');
-    const [newTutorEmail, setNewTutorEmail] = useState('');
-    const [newTutorPhone, setNewTutorPhone] = useState('');
+    const [showTutorModal, setShowTutorModal] = useState(false);
 
     const [saving, setSaving] = useState(false);
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -139,6 +143,12 @@ export default function EditarAlumnoPage() {
             setOwnEquipment(student.own_equipment);
             setMedicalNotes((student as any).medical_notes || '');
             setIsActive(student.is_active);
+
+            // Cargar datos de membresía
+            setMembershipStatus(student.membership_status || 'active');
+            setMembershipStartDate(student.membership_start_date?.split('T')[0] || '');
+            setTotalClasses(student.total_classes || 0);
+            setRemainingClasses(student.remaining_classes || 0);
 
             // Cargar tutor actual
             if (student.user_id) {
@@ -248,57 +258,13 @@ export default function EditarAlumnoPage() {
         }
     };
 
-    // Crear nuevo tutor
-    const createNewTutor = async (): Promise<string | null> => {
-        if (!newTutorName.trim()) {
-            setError('Ingresa el nombre del tutor');
-            return null;
-        }
-
-        try {
-            const newProfileId = crypto.randomUUID();
-
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert({
-                    id: newProfileId,
-                    first_name: newTutorName.split(' ')[0] || newTutorName,
-                    last_name: newTutorName.split(' ').slice(1).join(' ') || null,
-                    email: newTutorEmail.trim() || null,
-                    phone: newTutorPhone.trim() || null,
-                    role: 'PADRE',
-                });
-
-            if (profileError) {
-                console.error('Error creating profile:', profileError);
-                setError('Error al crear el tutor');
-                return null;
-            }
-
-            return newProfileId;
-        } catch (err) {
-            console.error('Error:', err);
-            return null;
-        }
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
         setError('');
 
         try {
-            let tutorId = selectedTutorId;
-
-            // Si está creando nuevo tutor
-            if (showNewTutorForm) {
-                const newId = await createNewTutor();
-                if (!newId) {
-                    setSaving(false);
-                    return;
-                }
-                tutorId = newId;
-            }
+            const tutorId = selectedTutorId;
 
             let photoUrl = currentPhotoUrl;
             if (photoFile) {
@@ -323,6 +289,11 @@ export default function EditarAlumnoPage() {
                     medical_notes: medicalNotes.trim() || null,
                     is_active: isActive,
                     user_id: tutorId || null,
+                    // Campos de membresía
+                    membership_status: membershipStatus,
+                    membership_start_date: membershipStartDate || null,
+                    total_classes: totalClasses,
+                    remaining_classes: remainingClasses,
                 })
                 .eq('id', studentId);
 
@@ -349,7 +320,7 @@ export default function EditarAlumnoPage() {
                     }, { onConflict: 'profile_id,student_id' });
             }
 
-            router.push('/admin');
+            router.push(`/admin/preview/${studentId}`);
         } catch (err: any) {
             console.error('Error updating student:', err);
             if (err.message?.includes('dni')) {
@@ -371,7 +342,7 @@ export default function EditarAlumnoPage() {
                 .eq('id', studentId);
 
             if (deleteError) throw deleteError;
-            router.push('/admin');
+            router.push('/admin/alumnos');
         } catch (err) {
             console.error('Error deleting student:', err);
             setError('Error al eliminar el alumno');
@@ -462,113 +433,49 @@ export default function EditarAlumnoPage() {
                             Tutor / Padre
                         </h3>
 
-                        {!showNewTutorForm ? (
-                            <>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                                        Seleccionar tutor
-                                    </label>
-                                    <select
-                                        value={selectedTutorId}
-                                        onChange={(e) => setSelectedTutorId(e.target.value)}
-                                        className="w-full"
-                                    >
-                                        <option value="">-- Sin tutor asignado --</option>
-                                        {profiles.map((p) => (
-                                            <option key={p.id} value={p.id}>
-                                                {p.first_name || p.full_name || 'Sin nombre'} {p.last_name || ''}
-                                                {p.access_code ? ` (${p.access_code})` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                Seleccionar tutor
+                            </label>
+                            <select
+                                value={selectedTutorId}
+                                onChange={(e) => setSelectedTutorId(e.target.value)}
+                                className="w-full"
+                            >
+                                <option value="">-- Sin tutor asignado --</option>
+                                {profiles.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.first_name || p.full_name || 'Sin nombre'} {p.last_name || ''}
+                                        {p.access_code ? ` (${p.access_code})` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                                {currentTutor && currentTutor.access_code && (
-                                    <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-3">
-                                        <p className="text-xs text-slate-400 mb-1">Código de acceso del tutor:</p>
-                                        <p className="text-lg font-mono font-bold text-primary-400">{currentTutor.access_code}</p>
-                                    </div>
-                                )}
-
-                                <div className="relative">
-                                    <div className="absolute inset-0 flex items-center">
-                                        <div className="w-full border-t border-slate-600"></div>
-                                    </div>
-                                    <div className="relative flex justify-center">
-                                        <span className="bg-slate-800 px-3 text-sm text-slate-400">o</span>
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowNewTutorForm(true);
-                                        setSelectedTutorId('');
-                                    }}
-                                    className="btn btn-secondary w-full"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    Crear nuevo tutor
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-2">
-                                            Nombre completo *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={newTutorName}
-                                            onChange={(e) => setNewTutorName(e.target.value)}
-                                            placeholder="Nombre y apellido del tutor"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                                Email
-                                            </label>
-                                            <input
-                                                type="email"
-                                                value={newTutorEmail}
-                                                onChange={(e) => setNewTutorEmail(e.target.value)}
-                                                placeholder="email@ejemplo.com"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                                Teléfono
-                                            </label>
-                                            <input
-                                                type="tel"
-                                                value={newTutorPhone}
-                                                onChange={(e) => setNewTutorPhone(e.target.value)}
-                                                placeholder="+51 999 999 999"
-                                            />
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-slate-400">
-                                        El código de acceso se generará automáticamente
-                                    </p>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowNewTutorForm(false);
-                                        setSelectedTutorId(originalTutorId);
-                                        setNewTutorName('');
-                                        setNewTutorEmail('');
-                                        setNewTutorPhone('');
-                                    }}
-                                    className="text-sm text-slate-400 hover:text-white"
-                                >
-                                    ← Volver a seleccionar tutor existente
-                                </button>
-                            </>
+                        {currentTutor && currentTutor.access_code && (
+                            <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-3">
+                                <p className="text-xs text-slate-400 mb-1">Código de acceso del tutor:</p>
+                                <p className="text-lg font-mono font-bold text-primary-400">{currentTutor.access_code}</p>
+                            </div>
                         )}
+
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-slate-600"></div>
+                            </div>
+                            <div className="relative flex justify-center">
+                                <span className="bg-slate-800 px-3 text-sm text-slate-400">o</span>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setShowTutorModal(true)}
+                            className="btn btn-secondary w-full"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Crear nuevo tutor
+                        </button>
                     </div>
 
                     {/* Datos personales */}
@@ -782,6 +689,77 @@ export default function EditarAlumnoPage() {
                         </div>
                     </div>
 
+                    {/* Membresía */}
+                    <div className="glass-card p-4 space-y-4">
+                        <h3 className="text-lg font-semibold text-white">
+                            Membresía
+                        </h3>
+
+                        {/* Estado de membresía */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                Estado de membresía
+                            </label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {(Object.entries(MEMBERSHIP_STATUS) as [MembershipStatus, string][]).map(([key, label]) => (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => setMembershipStatus(key)}
+                                        className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${membershipStatus === key
+                                            ? key === 'active'
+                                                ? 'bg-green-500 text-white'
+                                                : key === 'debt'
+                                                    ? 'bg-red-500 text-white'
+                                                    : 'bg-slate-600 text-white'
+                                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                            }`}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Fecha de inicio */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                Fecha de inicio de membresía
+                            </label>
+                            <input
+                                type="date"
+                                value={membershipStartDate}
+                                onChange={(e) => setMembershipStartDate(e.target.value)}
+                            />
+                        </div>
+
+                        {/* Clases */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    Clases totales
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={totalClasses}
+                                    onChange={(e) => setTotalClasses(parseInt(e.target.value) || 0)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    Clases restantes
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={remainingClasses}
+                                    onChange={(e) => setRemainingClasses(parseInt(e.target.value) || 0)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Badges del Alumno */}
                     <div className="glass-card p-4 space-y-4">
                         <div className="flex items-center justify-between">
@@ -951,6 +929,21 @@ export default function EditarAlumnoPage() {
                     }}
                 />
             )}
+
+            {/* Modal de creación de tutor */}
+            {showTutorModal && (
+                <CreateTutorModal
+                    onClose={() => setShowTutorModal(false)}
+                    onSuccess={(newTutor) => {
+                        setProfiles(prev => [...prev, newTutor].sort((a, b) =>
+                            (a.first_name || '').localeCompare(b.first_name || '')
+                        ));
+                        setSelectedTutorId(newTutor.id);
+                        setShowTutorModal(false);
+                    }}
+                />
+            )}
         </main>
     );
 }
+

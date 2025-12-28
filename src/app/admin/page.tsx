@@ -4,491 +4,302 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { supabase, Student, TechnicalEvaluation, TrainingControl, Profile, Duel, DuelSet } from '@/lib/supabase';
-import AdminControlHistory from '@/components/AdminControlHistory';
-import DuelHistory from '@/components/DuelHistory';
-import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { supabase, ClassAttendance, Student, ATTENDANCE_STATUS, AttendanceStatus } from '@/lib/supabase';
 import {
-    Plus,
     Users,
-    ClipboardCheck,
-    Loader2,
-    CheckCircle,
-    XCircle,
-    Search,
-    Eye,
-    Edit,
-    User,
-    UserPlus,
-    Target,
     UserCheck,
-    Copy,
-    Check,
+    Target,
+    ClipboardCheck,
     Swords,
-    Award
+    Award,
+    Loader2,
+    TrendingUp,
+    Calendar,
+    ArrowRight,
+    CalendarClock,
+    User,
+    Clock
 } from 'lucide-react';
 
-interface ProfileWithStudents extends Profile {
-    profile_students?: { student: Student }[];
+interface DashboardStats {
+    totalStudents: number;
+    activeStudents: number;
+    totalTutors: number;
+    totalControls: number;
+    totalEvaluations: number;
+    totalDuels: number;
+    totalBadges: number;
+    recentControlsCount: number;
 }
 
-export default function AdminPage() {
-    const [students, setStudents] = useState<Student[]>([]);
-    const [evaluations, setEvaluations] = useState<(TechnicalEvaluation & { student?: Student })[]>([]);
-    const [controls, setControls] = useState<(TrainingControl & { student?: Student })[]>([]);
-    const [duels, setDuels] = useState<(Duel & { student?: Student; opponent_student?: Student; sets?: DuelSet[] })[]>([]);
-    const [profiles, setProfiles] = useState<ProfileWithStudents[]>([]);
+export default function AdminDashboardPage() {
+    const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState<'controls' | 'duels' | 'evaluations' | 'students' | 'tutors' | 'badges'>('controls');
-    const [copiedCode, setCopiedCode] = useState<string | null>(null);
+    const [todayAttendances, setTodayAttendances] = useState<(ClassAttendance & { student: Student })[]>([]);
 
     useEffect(() => {
-        loadData();
+        loadStats();
     }, []);
 
-    const loadData = async () => {
+    const loadStats = async () => {
         try {
-            setLoading(true);
+            // Cargar estadísticas en paralelo
+            const [
+                { count: totalStudents },
+                { count: activeStudents },
+                { count: totalTutors },
+                { count: totalControls },
+                { count: totalEvaluations },
+                { count: totalDuels },
+                { count: totalBadges },
+            ] = await Promise.all([
+                supabase.from('students').select('*', { count: 'exact', head: true }),
+                supabase.from('students').select('*', { count: 'exact', head: true }).eq('is_active', true),
+                supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['PADRE', 'TUTOR']),
+                supabase.from('training_controls').select('*', { count: 'exact', head: true }),
+                supabase.from('technical_evaluations').select('*', { count: 'exact', head: true }),
+                supabase.from('duels').select('*', { count: 'exact', head: true }),
+                supabase.from('badges').select('*', { count: 'exact', head: true }),
+            ]);
 
-            const { data: studentsData } = await supabase
-                .from('students')
-                .select('*')
-                .eq('is_active', true)
-                .order('first_name');
-
-            setStudents(studentsData || []);
-
-            const { data: evalData } = await supabase
-                .from('technical_evaluations')
-                .select('*, student:students(*)')
-                .order('evaluation_date', { ascending: false })
-                .limit(50);
-
-            setEvaluations(evalData || []);
-
-            const { data: controlsData } = await supabase
+            // Controles de los últimos 7 días
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const { count: recentControlsCount } = await supabase
                 .from('training_controls')
+                .select('*', { count: 'exact', head: true })
+                .gte('control_date', weekAgo.toISOString());
+
+            setStats({
+                totalStudents: totalStudents || 0,
+                activeStudents: activeStudents || 0,
+                totalTutors: totalTutors || 0,
+                totalControls: totalControls || 0,
+                totalEvaluations: totalEvaluations || 0,
+                totalDuels: totalDuels || 0,
+                totalBadges: totalBadges || 0,
+                recentControlsCount: recentControlsCount || 0,
+            });
+
+            // Cargar asistencias de hoy
+            const today = new Date().toISOString().split('T')[0];
+            const { data: todayData } = await supabase
+                .from('class_attendances')
                 .select('*, student:students(*)')
-                .order('control_date', { ascending: false })
-                .limit(50);
+                .eq('class_date', today)
+                .order('class_time', { ascending: true });
 
-            setControls(controlsData || []);
-
-            // Cargar perfiles con sus estudiantes asociados
-            const { data: profilesData } = await supabase
-                .from('profiles')
-                .select('*, profile_students(student:students(*))')
-                .order('first_name');
-
-            setProfiles(profilesData || []);
-
-            // Cargar duelos
-            const { data: duelsData } = await supabase
-                .from('duels')
-                .select(`
-                    *,
-                    student:students!duels_student_id_fkey(*),
-                    opponent_student:students!duels_opponent_student_id_fkey(*),
-                    sets:duel_sets(*)
-                `)
-                .order('duel_date', { ascending: false })
-                .limit(50);
-
-            setDuels(duelsData || []);
-
+            setTodayAttendances(todayData || []);
         } catch (err) {
-            console.error('Error loading data:', err);
+            console.error('Error loading stats:', err);
         } finally {
             setLoading(false);
         }
     };
 
-    const copyToClipboard = (code: string) => {
-        navigator.clipboard.writeText(code);
-        setCopiedCode(code);
-        setTimeout(() => setCopiedCode(null), 2000);
-    };
-
-    const filteredStudents = students.filter(s =>
-        `${s.first_name} ${s.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const filteredEvaluations = evaluations.filter(e => {
-        const student = e.student as Student;
-        return `${student?.first_name} ${student?.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
-    });
-
-    const filteredControls = controls.filter(c => {
-        const student = c.student as Student;
-        return `${student?.first_name} ${student?.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
-    });
-
-    const filteredProfiles = profiles.filter(p =>
-        `${p.first_name || ''} ${p.last_name || ''} ${p.email || ''}`.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
     if (loading) {
         return (
-            <main className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center">
                 <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
-            </main>
+            </div>
         );
     }
 
+    const quickLinks = [
+        { href: '/admin/alumnos', label: 'Alumnos', icon: Users, count: stats?.activeStudents, color: 'text-blue-500' },
+        { href: '/admin/tutores', label: 'Tutores', icon: UserCheck, count: stats?.totalTutors, color: 'text-green-500' },
+        { href: '/admin/controles', label: 'Controles', icon: Target, count: stats?.totalControls, color: 'text-orange-500' },
+        { href: '/admin/evaluaciones', label: 'Evaluaciones', icon: ClipboardCheck, count: stats?.totalEvaluations, color: 'text-purple-500' },
+        { href: '/admin/duelos', label: 'Duelos', icon: Swords, count: stats?.totalDuels, color: 'text-red-500' },
+        { href: '/admin/badges', label: 'Badges', icon: Award, count: stats?.totalBadges, color: 'text-yellow-500' },
+    ];
+
+    const quickActions = [
+        { href: '/admin/alumno/nuevo', label: 'Nuevo Alumno', icon: Users },
+        { href: '/admin/control/nuevo', label: 'Nuevo Control', icon: Target },
+        { href: '/admin/nueva', label: 'Nueva Evaluación', icon: ClipboardCheck },
+        { href: '/admin/duelo/nuevo', label: 'Nuevo Duelo', icon: Swords },
+    ];
+
     return (
-        <main className="min-h-screen p-4 pb-8">
-            <div className="max-w-4xl mx-auto">
-                {/* Header */}
-                <header className="mb-6">
-                    <h1 className="text-2xl font-bold text-white mb-2">
-                        Panel de Administración
-                    </h1>
-                    <p className="text-slate-400">
-                        Gestiona evaluaciones, controles y tutores
-                    </p>
-                </header>
+        <div className="p-4 lg:p-6">
+            {/* Header */}
+            <header className="mb-8">
+                <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">
+                    Panel de Administración
+                </h1>
+                <p className="text-slate-400">
+                    Bienvenido al centro de control de Absolute Archery
+                </p>
+            </header>
 
-                {/* Botones de acción */}
-                <div className="grid grid-cols-4 gap-2 mb-6">
-                    <Link href="/admin/control/nuevo" className="btn btn-primary text-sm py-2">
-                        <Target className="w-4 h-4" />
-                        Control
-                    </Link>
-                    <Link href="/admin/duelo/nuevo" className="btn btn-secondary text-sm py-2">
-                        <Swords className="w-4 h-4" />
-                        Duelo
-                    </Link>
-                    <Link href="/admin/nueva" className="btn btn-secondary text-sm py-2">
-                        <ClipboardCheck className="w-4 h-4" />
-                        Eval.
-                    </Link>
-                    <Link href="/admin/alumno/nuevo" className="btn btn-secondary text-sm py-2">
-                        <UserPlus className="w-4 h-4" />
-                        Alumno
-                    </Link>
-                </div>
-
-                {/* Buscador global */}
-                <div className="relative mb-4">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <input
-                        type="text"
-                        placeholder="Buscar..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                    />
-                </div>
-
-                {/* Tabs */}
-                <div className="flex gap-1 mb-6 overflow-x-auto">
-                    <button
-                        onClick={() => setActiveTab('controls')}
-                        className={`flex-1 py-2.5 px-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1 text-xs ${activeTab === 'controls'
-                            ? 'bg-primary-500 text-white'
-                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                            }`}
-                    >
-                        <Target className="w-4 h-4" />
-                        <span className="hidden sm:inline">Controles</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('duels')}
-                        className={`flex-1 py-2.5 px-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1 text-xs ${activeTab === 'duels'
-                            ? 'bg-primary-500 text-white'
-                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                            }`}
-                    >
-                        <Swords className="w-4 h-4" />
-                        <span className="hidden sm:inline">Duelos</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('evaluations')}
-                        className={`flex-1 py-2.5 px-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1 text-xs ${activeTab === 'evaluations'
-                            ? 'bg-primary-500 text-white'
-                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                            }`}
-                    >
-                        <ClipboardCheck className="w-4 h-4" />
-                        <span className="hidden sm:inline">Eval.</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('students')}
-                        className={`flex-1 py-2.5 px-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1 text-xs ${activeTab === 'students'
-                            ? 'bg-primary-500 text-white'
-                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                            }`}
-                    >
-                        <Users className="w-4 h-4" />
-                        <span className="hidden sm:inline">Alumnos</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('tutors')}
-                        className={`flex-1 py-2.5 px-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1 text-xs ${activeTab === 'tutors'
-                            ? 'bg-primary-500 text-white'
-                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                            }`}
-                    >
-                        <UserCheck className="w-4 h-4" />
-                        <span className="hidden sm:inline">Tutores</span>
-                    </button>
-                    <Link
-                        href="/admin/badges"
-                        className={`flex-1 py-2.5 px-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-1 text-xs ${activeTab === 'badges'
-                            ? 'bg-primary-500 text-white'
-                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                            }`}
-                    >
-                        <Award className="w-4 h-4" />
-                        <span className="hidden sm:inline">Badges</span>
-                    </Link>
-                </div>
-
-                {/* Contenido */}
-                {activeTab === 'controls' && (
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-white">
-                                Controles Recientes
-                            </h3>
-                            <span className="text-sm text-slate-400">
-                                {filteredControls.length} registro(s)
-                            </span>
+            {/* Stats Overview */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="glass-card p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                            <Users className="w-5 h-5 text-blue-500" />
                         </div>
-                        <AdminControlHistory controls={filteredControls} />
+                        <div>
+                            <p className="text-2xl font-bold text-white">{stats?.activeStudents}</p>
+                            <p className="text-xs text-slate-400">Alumnos Activos</p>
+                        </div>
                     </div>
-                )}
-
-                {activeTab === 'duels' && (
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-white">
-                                Duelos Recientes
-                            </h3>
-                            <span className="text-sm text-slate-400">
-                                {duels.length} registro(s)
-                            </span>
+                </div>
+                <div className="glass-card p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                            <TrendingUp className="w-5 h-5 text-green-500" />
                         </div>
-                        <DuelHistory duels={duels} showStudent={true} showEditButton={true} />
+                        <div>
+                            <p className="text-2xl font-bold text-white">{stats?.recentControlsCount}</p>
+                            <p className="text-xs text-slate-400">Controles (7 días)</p>
+                        </div>
                     </div>
-                )}
-
-                {activeTab === 'evaluations' && (
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-white">
-                                Evaluaciones Recientes
-                            </h3>
-                            <span className="text-sm text-slate-400">
-                                {filteredEvaluations.length} resultado(s)
-                            </span>
+                </div>
+                <div className="glass-card p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                            <ClipboardCheck className="w-5 h-5 text-purple-500" />
                         </div>
-
-                        {filteredEvaluations.length === 0 ? (
-                            <div className="glass-card p-6 text-center">
-                                <p className="text-slate-400">No hay evaluaciones que mostrar</p>
-                            </div>
-                        ) : (
-                            filteredEvaluations.map((evaluation) => {
-                                const student = evaluation.student as Student;
-                                return (
-                                    <div key={evaluation.id} className="glass-card p-4">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center gap-3">
-                                                {student?.photo_url ? (
-                                                    <img
-                                                        src={student.photo_url}
-                                                        alt=""
-                                                        className="w-10 h-10 rounded-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
-                                                        <User className="w-5 h-5 text-slate-400" />
-                                                    </div>
-                                                )}
-                                                <div>
-                                                    <p className="text-white font-medium">
-                                                        {student?.first_name} {student?.last_name}
-                                                    </p>
-                                                    <p className="text-sm text-slate-400">
-                                                        {format(parseISO(evaluation.evaluation_date), "d 'de' MMMM, yyyy", { locale: es })}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className={`flex items-center gap-1 px-2 py-1 rounded text-sm ${evaluation.is_passed
-                                                ? 'bg-green-500/20 text-green-400'
-                                                : 'bg-red-500/20 text-red-400'
-                                                }`}>
-                                                {evaluation.is_passed ? (
-                                                    <CheckCircle className="w-4 h-4" />
-                                                ) : (
-                                                    <XCircle className="w-4 h-4" />
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex gap-2 pt-3 border-t border-slate-700/50">
-                                            <Link
-                                                href={`/admin/editar/${evaluation.id}`}
-                                                className="btn btn-secondary flex-1 py-2 text-sm"
-                                            >
-                                                <Edit className="w-4 h-4" />
-                                                Editar
-                                            </Link>
-                                            <Link
-                                                href={`/admin/preview/${student?.id}`}
-                                                className="btn btn-secondary flex-1 py-2 text-sm"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                                Ver
-                                            </Link>
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        )}
+                        <div>
+                            <p className="text-2xl font-bold text-white">{stats?.totalEvaluations}</p>
+                            <p className="text-xs text-slate-400">Evaluaciones</p>
+                        </div>
                     </div>
-                )}
-
-                {activeTab === 'students' && (
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-white">
-                                Alumnos
-                            </h3>
-                            <span className="text-sm text-slate-400">
-                                {filteredStudents.length} alumno(s)
-                            </span>
+                </div>
+                <div className="glass-card p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                            <Award className="w-5 h-5 text-yellow-500" />
                         </div>
+                        <div>
+                            <p className="text-2xl font-bold text-white">{stats?.totalBadges}</p>
+                            <p className="text-xs text-slate-400">Badges</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                        {filteredStudents.map((student) => (
-                            <div key={student.id} className="glass-card p-4">
+            {/* Asistencia de Hoy */}
+            {todayAttendances.length > 0 && (
+                <section className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                            <CalendarClock className="w-5 h-5 text-primary-500" />
+                            Asistencia de Hoy ({todayAttendances.length})
+                        </h2>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {todayAttendances.map((att) => (
+                            <div
+                                key={att.id}
+                                className={`glass-card p-3 border-l-4 ${att.status === 'attended' ? 'border-l-green-500' :
+                                        att.status === 'missed' ? 'border-l-red-500' :
+                                            att.status === 'cancelled' ? 'border-l-yellow-500' :
+                                                'border-l-blue-500'
+                                    }`}
+                            >
                                 <div className="flex items-center gap-3">
-                                    {student.photo_url ? (
-                                        <img
-                                            src={student.photo_url}
-                                            alt={student.first_name}
-                                            className="w-12 h-12 rounded-full object-cover"
-                                        />
+                                    {/* Foto */}
+                                    {att.student?.photo_url ? (
+                                        <img src={att.student.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                                     ) : (
-                                        <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center">
-                                            <User className="w-6 h-6 text-slate-400" />
+                                        <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
+                                            <User className="w-5 h-5 text-slate-400" />
                                         </div>
                                     )}
-
+                                    {/* Info */}
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-white font-medium truncate">
-                                            {student.first_name} {student.last_name}
-                                        </p>
-                                        <p className="text-sm text-slate-400">
-                                            {student.level} • {student.discipline}
-                                        </p>
+                                        <Link
+                                            href={`/admin/preview/${att.student_id}`}
+                                            className="text-sm font-medium text-white hover:text-primary-400 truncate block"
+                                        >
+                                            {att.student?.first_name} {att.student?.last_name}
+                                        </Link>
+                                        <div className="flex items-center gap-2 text-xs text-slate-400">
+                                            {att.class_time && (
+                                                <span className="flex items-center gap-1">
+                                                    <Clock className="w-3 h-3" />
+                                                    {att.class_time.slice(0, 5)}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
-
-                                    <div className={`w-2 h-2 rounded-full ${student.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
-
-                                    <span className="text-xs bg-primary-500/20 text-primary-400 px-2 py-1 rounded font-mono">
-                                        {student.access_code || '------'}
-                                    </span>
-
-                                    <div className="flex items-center gap-1">
-                                        <Link
-                                            href={`/admin/alumno/${student.id}`}
-                                            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-                                            title="Editar alumno"
-                                        >
-                                            <Edit className="w-4 h-4" />
-                                        </Link>
-                                        <Link
-                                            href={`/admin/preview/${student.id}`}
-                                            className="p-2 text-slate-400 hover:text-primary-400 hover:bg-slate-700 rounded-lg transition-colors"
-                                            title="Ver perfil"
-                                        >
-                                            <Eye className="w-4 h-4" />
-                                        </Link>
+                                    {/* Status buttons */}
+                                    <div className="flex gap-1">
+                                        {(['attended', 'missed', 'cancelled'] as AttendanceStatus[]).map((status) => (
+                                            <button
+                                                key={status}
+                                                onClick={async () => {
+                                                    await supabase
+                                                        .from('class_attendances')
+                                                        .update({ status })
+                                                        .eq('id', att.id);
+                                                    setTodayAttendances(prev => prev.map(a =>
+                                                        a.id === att.id ? { ...a, status } : a
+                                                    ));
+                                                }}
+                                                className={`w-8 h-8 rounded-full text-xs font-bold ${att.status === status
+                                                        ? status === 'attended' ? 'bg-green-500 text-white'
+                                                            : status === 'missed' ? 'bg-red-500 text-white'
+                                                                : 'bg-yellow-500 text-black'
+                                                        : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                                                    }`}
+                                                title={ATTENDANCE_STATUS[status]}
+                                            >
+                                                {status === 'attended' ? '✓' : status === 'missed' ? '✗' : 'C'}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
-                )}
+                </section>
+            )}
 
-                {activeTab === 'tutors' && (
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-white">
-                                Padres / Tutores
-                            </h3>
-                            <span className="text-sm text-slate-400">
-                                {filteredProfiles.length} tutor(es)
-                            </span>
-                        </div>
-
-                        {filteredProfiles.length === 0 ? (
-                            <div className="glass-card p-6 text-center">
-                                <UserCheck className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                                <p className="text-slate-400 mb-2">No hay tutores registrados</p>
-                                <p className="text-xs text-slate-500">
-                                    Los tutores se crean desde Supabase y se vinculan a estudiantes
-                                </p>
+            {/* Quick Actions */}
+            <section className="mb-8">
+                <h2 className="text-lg font-semibold text-white mb-4">Acciones Rápidas</h2>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    {quickActions.map((action) => (
+                        <Link
+                            key={action.href}
+                            href={action.href}
+                            className="glass-card p-4 flex flex-col items-center gap-2 hover:bg-slate-700/50 transition-colors group"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center group-hover:bg-primary-500/30 transition-colors">
+                                <action.icon className="w-6 h-6 text-primary-500" />
                             </div>
-                        ) : (
-                            filteredProfiles.map((profile) => {
-                                const studentCount = profile.profile_students?.length || 0;
-                                const students = profile.profile_students?.map(ps => ps.student).filter(Boolean) || [];
+                            <span className="text-sm text-slate-300 text-center">{action.label}</span>
+                        </Link>
+                    ))}
+                </div>
+            </section>
 
-                                return (
-                                    <div key={profile.id} className="glass-card p-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center">
-                                                <UserCheck className="w-6 h-6 text-primary-400" />
-                                            </div>
-
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-white font-medium truncate">
-                                                    {profile.first_name || profile.full_name || 'Sin nombre'} {profile.last_name || ''}
-                                                </p>
-                                                <p className="text-sm text-slate-400 truncate">
-                                                    {profile.email || profile.phone || 'Sin contacto'}
-                                                </p>
-                                                {studentCount > 0 && (
-                                                    <p className="text-xs text-primary-400 mt-1">
-                                                        {studentCount} alumno(s): {students.map(s => s?.first_name).join(', ')}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            {/* Código de acceso con botón copiar */}
-                                            {profile.access_code ? (
-                                                <button
-                                                    onClick={() => copyToClipboard(profile.access_code!)}
-                                                    className="flex items-center gap-2 px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 rounded-lg transition-colors group"
-                                                    title="Copiar código"
-                                                >
-                                                    <span className="text-sm font-mono text-primary-400">
-                                                        {profile.access_code}
-                                                    </span>
-                                                    {copiedCode === profile.access_code ? (
-                                                        <Check className="w-4 h-4 text-green-400" />
-                                                    ) : (
-                                                        <Copy className="w-4 h-4 text-slate-400 group-hover:text-primary-400" />
-                                                    )}
-                                                </button>
-                                            ) : (
-                                                <span className="text-xs text-slate-500 px-3 py-2">
-                                                    Sin código
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
-                )}
-            </div>
-        </main>
+            {/* Module Links */}
+            <section>
+                <h2 className="text-lg font-semibold text-white mb-4">Módulos</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {quickLinks.map((link) => (
+                        <Link
+                            key={link.href}
+                            href={link.href}
+                            className="glass-card p-4 flex items-center gap-4 hover:bg-slate-700/50 transition-colors group"
+                        >
+                            <div className={`w-12 h-12 rounded-lg bg-slate-700/50 flex items-center justify-center`}>
+                                <link.icon className={`w-6 h-6 ${link.color}`} />
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-medium text-white">{link.label}</p>
+                                <p className="text-sm text-slate-400">{link.count} registros</p>
+                            </div>
+                            <ArrowRight className="w-5 h-5 text-slate-500 group-hover:text-primary-500 transition-colors" />
+                        </Link>
+                    ))}
+                </div>
+            </section>
+        </div>
     );
 }

@@ -4,8 +4,10 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, Student } from '@/lib/supabase';
-import { Loader2, User, ArrowRight, Target } from 'lucide-react';
+import { supabase, Student, MEMBERSHIP_STATUS } from '@/lib/supabase';
+import { Loader2, User, ArrowRight, Target, Calendar } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function SeleccionarPage() {
     const [students, setStudents] = useState<Student[]>([]);
@@ -131,6 +133,18 @@ export default function SeleccionarPage() {
                                 <p className="text-xs text-slate-500">
                                     Distancia: {student.assigned_distance}m
                                 </p>
+                                {/* Membresía */}
+                                <div className="mt-2 flex items-center gap-3 text-xs">
+                                    {student.membership_start_date && (
+                                        <span className="text-slate-400 flex items-center gap-1">
+                                            <Calendar className="w-3 h-3" />
+                                            {format(parseISO(student.membership_start_date), "d MMM yy", { locale: es })}
+                                        </span>
+                                    )}
+                                    <span className={`font-medium ${student.remaining_classes <= 2 ? 'text-red-400' : 'text-primary-400'}`}>
+                                        {student.remaining_classes}/{student.total_classes} clases
+                                    </span>
+                                </div>
                             </div>
 
                             {/* Flecha */}

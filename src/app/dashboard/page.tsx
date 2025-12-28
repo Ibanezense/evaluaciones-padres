@@ -4,9 +4,10 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, Student, TrainingControl, TechnicalEvaluation, Badge, StudentBadge } from '@/lib/supabase';
+import { supabase, Student, TrainingControl, TechnicalEvaluation, Badge, StudentBadge, MEMBERSHIP_STATUS, ClassAttendance } from '@/lib/supabase';
 import StudentCard from '@/components/StudentCard';
-import { Loader2, RefreshCw, Target, ClipboardCheck, TrendingUp, Trophy, Calendar, Award, ChevronRight } from 'lucide-react';
+import AttendanceCardTutor from '@/components/AttendanceCardTutor';
+import { Loader2, RefreshCw, Target, ClipboardCheck, TrendingUp, Trophy, Calendar, Award, ChevronRight, CalendarClock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -17,6 +18,7 @@ export default function DashboardHomePage() {
     const [recentBadges, setRecentBadges] = useState<(StudentBadge & { badge: Badge })[]>([]);
     const [controlCount, setControlCount] = useState(0);
     const [evaluationCount, setEvaluationCount] = useState(0);
+    const [attendances, setAttendances] = useState<ClassAttendance[]>([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
@@ -77,6 +79,15 @@ export default function DashboardHomePage() {
                 .limit(5);
 
             setRecentBadges(badgesData || []);
+
+            // Cargar asistencias
+            const { data: attendancesData } = await supabase
+                .from('class_attendances')
+                .select('*')
+                .eq('student_id', studentId)
+                .order('class_date', { ascending: true });
+
+            setAttendances(attendancesData || []);
 
         } catch (err) {
             console.error('Error loading data:', err);
@@ -157,6 +168,28 @@ export default function DashboardHomePage() {
                             <p className="text-xs text-primary-400">
                                 Distancia: {student.assigned_distance}m
                             </p>
+                        </div>
+                    </div>
+                    {/* Membresía */}
+                    <div className="mt-3 pt-3 border-t border-slate-700/50 flex items-center justify-between">
+                        <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${student.membership_status === 'active'
+                            ? 'bg-green-500/20 text-green-400'
+                            : student.membership_status === 'debt'
+                                ? 'bg-red-500/20 text-red-400'
+                                : 'bg-slate-600/50 text-slate-400'
+                            }`}>
+                            {MEMBERSHIP_STATUS[student.membership_status] || 'Sin estado'}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs">
+                            {student.membership_start_date && (
+                                <span className="text-slate-400 flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {format(parseISO(student.membership_start_date), "d MMM", { locale: es })}
+                                </span>
+                            )}
+                            <span className="text-slate-400">
+                                Clases: <span className={`font-bold ${student.remaining_classes <= 2 ? 'text-red-400' : 'text-primary-400'}`}>{student.remaining_classes}</span>/{student.total_classes}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -306,6 +339,41 @@ export default function DashboardHomePage() {
                         <p className="text-xs text-slate-500 mt-1">
                             Los controles y evaluaciones aparecerán aquí
                         </p>
+                    </div>
+                )}
+
+                {/* Mis Clases - Asistencia */}
+                {student.total_classes > 0 && (
+                    <div className="glass-card p-4 mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-medium text-slate-400 flex items-center gap-2">
+                                <CalendarClock className="w-4 h-4 text-primary-500" />
+                                Mis Clases
+                            </h3>
+                            <span className="text-xs text-slate-500">
+                                {student.remaining_classes}/{student.total_classes} restantes
+                            </span>
+                        </div>
+                        {attendances.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {attendances.map((attendance) => (
+                                    <AttendanceCardTutor
+                                        key={attendance.id}
+                                        attendance={attendance}
+                                        bowType={student.bow_type || 'none'}
+                                        onUpdate={(updated) => {
+                                            setAttendances(prev => prev.map(a =>
+                                                a.id === updated.id ? updated : a
+                                            ));
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-slate-500 text-center py-4">
+                                Tus clases programadas aparecerán aquí
+                            </p>
+                        )}
                     </div>
                 )}
 

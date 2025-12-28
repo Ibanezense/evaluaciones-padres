@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Target, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase, Student, Profile } from '@/lib/supabase';
+import { setSessionCookies } from '@/lib/session';
 
 export default function LoginPage() {
     const [accessCode, setAccessCode] = useState('');
@@ -29,6 +30,17 @@ export default function LoginPage() {
                 .single();
 
             if (profile) {
+                // Establecer cookies de sesión para el middleware
+                setSessionCookies(profile.id, profile.role || 'PADRE');
+
+                // Si es admin, redirigir directamente al panel de admin
+                if (profile.role === 'ADMIN') {
+                    sessionStorage.setItem('profileId', profile.id);
+                    sessionStorage.setItem('profileName', `${profile.first_name || ''} ${profile.last_name || ''}`.trim());
+                    router.push('/admin');
+                    return;
+                }
+
                 // Obtener estudiantes asociados a este perfil
                 const { data: relations } = await supabase
                     .from('profile_students')
@@ -73,6 +85,9 @@ export default function LoginPage() {
                 setLoading(false);
                 return;
             }
+
+            // Establecer cookies de sesión para el middleware
+            setSessionCookies(student.id, 'ALUMNO');
 
             // Alumno encontrado directamente
             sessionStorage.setItem('studentId', student.id);
