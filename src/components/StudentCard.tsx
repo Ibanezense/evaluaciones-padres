@@ -10,8 +10,16 @@ interface StudentCardProps {
 }
 
 export default function StudentCard({ student }: StudentCardProps) {
-    const age = differenceInYears(new Date(), parseISO(student.birth_date));
-    const formattedBirthDate = format(parseISO(student.birth_date), "d 'de' MMMM, yyyy", { locale: es });
+    // Parsear fecha de nacimiento de forma segura
+    let birthDate: Date | null = null;
+    if (student.birth_date) {
+        // Extraer solo la parte de fecha (YYYY-MM-DD) y parsear como local
+        const dateOnly = student.birth_date.split('T')[0];
+        birthDate = new Date(dateOnly + 'T12:00:00'); // Usar mediodía para evitar problemas de zona horaria
+    }
+    const isValidDate = birthDate && !isNaN(birthDate.getTime());
+    const age = isValidDate ? differenceInYears(new Date(), birthDate!) : null;
+    const formattedBirthDate = isValidDate ? format(birthDate!, "d 'de' MMMM, yyyy", { locale: es }) : 'Sin fecha';
 
     return (
         <div className="glass-card p-4 sm:p-6 animate-fade-in">
@@ -51,7 +59,7 @@ export default function StudentCard({ student }: StudentCardProps) {
                         <User className="w-3.5 h-3.5" />
                         Edad
                     </div>
-                    <p className="text-white font-semibold">{age} años</p>
+                    <p className="text-white font-semibold">{age !== null ? `${age} años` : '--'}</p>
                 </div>
 
                 {/* Fecha de nacimiento */}

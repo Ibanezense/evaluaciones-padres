@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { supabase, ClassAttendance, ATTENDANCE_STATUS, AttendanceStatus, Student } from '@/lib/supabase';
 import { Calendar, Clock, Trash2, User, Loader2 } from 'lucide-react';
 import { parseISO, getDay } from 'date-fns';
+import { toast } from 'sonner';
 
 // Horarios por día de la semana
 const WEEKDAY_TIMES = [
@@ -112,8 +113,10 @@ export default function AttendanceCardAdmin({
 
             setLocalStatus(newStatus);
             onUpdate({ ...attendance, ...data });
+            toast.success(`Estado cambiado a ${ATTENDANCE_STATUS[newStatus]}`);
         } catch (err) {
             console.error('Error updating status:', err);
+            toast.error('Error al cambiar el estado');
         } finally {
             setSaving(false);
         }
@@ -136,9 +139,11 @@ export default function AttendanceCardAdmin({
 
             if (error) throw error;
             onUpdate({ ...attendance, ...data });
+            toast.success('Fecha actualizada');
         } catch (err) {
             console.error('Error updating date:', err);
             setLocalDate(attendance.class_date);
+            toast.error('Error al actualizar fecha');
         } finally {
             setSaving(false);
         }
@@ -161,9 +166,11 @@ export default function AttendanceCardAdmin({
 
             if (error) throw error;
             onUpdate({ ...attendance, ...data });
+            toast.success('Hora actualizada');
         } catch (err) {
             console.error('Error updating time:', err);
             setLocalTime(attendance.class_time?.slice(0, 5) || '');
+            toast.error('Error al actualizar hora');
         } finally {
             setSaving(false);
         }
@@ -188,8 +195,10 @@ export default function AttendanceCardAdmin({
             }
 
             onDelete(attendance.id);
+            toast.success('Clase eliminada');
         } catch (err) {
             console.error('Error deleting attendance:', err);
+            toast.error('Error al eliminar clase');
         } finally {
             setSaving(false);
         }

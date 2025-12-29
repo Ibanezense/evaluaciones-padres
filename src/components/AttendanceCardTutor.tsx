@@ -5,6 +5,7 @@ import { supabase, ClassAttendance, ATTENDANCE_STATUS, AttendanceStatus, BowType
 import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, CalendarClock, Loader2 } from 'lucide-react';
 import { format, parseISO, getDay } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 // Horarios por día de la semana
 const WEEKDAY_TIMES = [
@@ -87,9 +88,11 @@ export default function AttendanceCardTutor({ attendance, bowType, onUpdate }: A
 
             if (error) throw error;
             onUpdate?.({ ...attendance, ...data });
+            toast.success('Fecha actualizada');
         } catch (err) {
             console.error('Error updating date:', err);
             setLocalDate(attendance.class_date);
+            toast.error('Error al actualizar fecha');
         } finally {
             setSaving(false);
         }
@@ -113,9 +116,11 @@ export default function AttendanceCardTutor({ attendance, bowType, onUpdate }: A
 
             if (error) throw error;
             onUpdate?.({ ...attendance, ...data });
+            toast.success('Hora actualizada');
         } catch (err) {
             console.error('Error updating time:', err);
             setLocalTime(attendance.class_time?.slice(0, 5) || '');
+            toast.error('Error al actualizar hora');
         } finally {
             setSaving(false);
         }

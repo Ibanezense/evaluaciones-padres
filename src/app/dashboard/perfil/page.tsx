@@ -67,7 +67,15 @@ export default function PerfilPage() {
         );
     }
 
-    const age = differenceInYears(new Date(), parseISO(student.birth_date));
+    // Parsear fecha de nacimiento de forma segura
+    let birthDate: Date | null = null;
+    if (student.birth_date) {
+        // Extraer solo la parte de fecha (YYYY-MM-DD) y parsear como local
+        const dateOnly = student.birth_date.split('T')[0];
+        birthDate = new Date(dateOnly + 'T12:00:00'); // Usar mediodía para evitar problemas de zona horaria
+    }
+    const isValidDate = birthDate && !isNaN(birthDate.getTime());
+    const age = isValidDate ? differenceInYears(new Date(), birthDate!) : null;
 
     return (
         <main className="p-4">
@@ -98,7 +106,7 @@ export default function PerfilPage() {
                     <h2 className="text-xl font-bold text-white">
                         {student.first_name} {student.last_name}
                     </h2>
-                    <p className="text-slate-400">{age} años</p>
+                    <p className="text-slate-400">{age !== null ? `${age} años` : ''}</p>
                 </div>
 
                 {/* Información deportiva */}
@@ -145,7 +153,7 @@ export default function PerfilPage() {
                             <div>
                                 <p className="text-xs text-slate-500">Nacimiento</p>
                                 <p className="text-white font-medium">
-                                    {format(parseISO(student.birth_date), "d MMM yyyy", { locale: es })}
+                                    {birthDate ? format(birthDate, "d MMM yyyy", { locale: es }) : 'Sin fecha'}
                                 </p>
                             </div>
                         </div>
