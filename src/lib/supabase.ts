@@ -308,7 +308,13 @@ export function calculateSetPoints(ourScore: number, opponentScore: number): { o
 // Calcular resultado del duelo a partir de los sets
 export function calculateDuelResult(
     sets: DuelSet[],
-    shootOff?: { ourScore: number; opponentScore: number; ourIsX: boolean; opponentIsX: boolean }
+    shootOff?: {
+        ourScore: number;
+        opponentScore: number;
+        ourIsX: boolean;
+        opponentIsX: boolean;
+        closestToCenter?: 'our' | 'opponent' | null;  // Nuevo: para empates exactos
+    }
 ): {
     ourTotalScore: number;
     opponentTotalScore: number;
@@ -342,7 +348,7 @@ export function calculateDuelResult(
         // Shoot-off
         isShootOff = true;
 
-        // X supera a 10
+        // X supera a 10 (X = 10.1 efectivo)
         const ourEffective = shootOff.ourIsX ? shootOff.ourScore + 0.1 : shootOff.ourScore;
         const opponentEffective = shootOff.opponentIsX ? shootOff.opponentScore + 0.1 : shootOff.opponentScore;
 
@@ -350,10 +356,22 @@ export function calculateDuelResult(
             result = 'win';
             ourSetPoints = 6;
             opponentSetPoints = 5;
-        } else {
+        } else if (opponentEffective > ourEffective) {
             result = 'loss';
             ourSetPoints = 5;
             opponentSetPoints = 6;
+        } else {
+            // Empate exacto en shoot-off, se decide por closestToCenter
+            if (shootOff.closestToCenter === 'our') {
+                result = 'win';
+                ourSetPoints = 6;
+                opponentSetPoints = 5;
+            } else if (shootOff.closestToCenter === 'opponent') {
+                result = 'loss';
+                ourSetPoints = 5;
+                opponentSetPoints = 6;
+            }
+            // Si no hay closestToCenter definido, result queda null (pendiente)
         }
     }
 

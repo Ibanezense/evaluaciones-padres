@@ -61,6 +61,7 @@ export default function EditarDueloPage() {
     const [opponentShootOffScore, setOpponentShootOffScore] = useState<number>(0);
     const [ourShootOffIsX, setOurShootOffIsX] = useState(false);
     const [opponentShootOffIsX, setOpponentShootOffIsX] = useState(false);
+    const [closestToCenter, setClosestToCenter] = useState<'our' | 'opponent' | null>(null);
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -88,7 +89,8 @@ export default function EditarDueloPage() {
             ourScore: ourShootOffScore,
             opponentScore: opponentShootOffScore,
             ourIsX: ourShootOffIsX,
-            opponentIsX: opponentShootOffIsX
+            opponentIsX: opponentShootOffIsX,
+            closestToCenter
         } : undefined;
 
         return {
@@ -96,7 +98,7 @@ export default function EditarDueloPage() {
             needsShootOff,
             setsWithPoints
         };
-    }, [sets, ourShootOffScore, opponentShootOffScore, ourShootOffIsX, opponentShootOffIsX]);
+    }, [sets, ourShootOffScore, opponentShootOffScore, ourShootOffIsX, opponentShootOffIsX, closestToCenter]);
 
     // Verificar si alguien ganó
     const someoneWon = duelResult.ourSetPoints >= 6 || duelResult.opponentSetPoints >= 6;
@@ -392,8 +394,8 @@ export default function EditarDueloPage() {
                                 type="button"
                                 onClick={() => setOpponentType('external')}
                                 className={`flex-1 py-2 rounded-lg font-medium transition-colors ${opponentType === 'external'
-                                        ? 'bg-primary-500 text-white'
-                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                    ? 'bg-primary-500 text-white'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                                     }`}
                             >
                                 Externo
@@ -402,8 +404,8 @@ export default function EditarDueloPage() {
                                 type="button"
                                 onClick={() => setOpponentType('internal')}
                                 className={`flex-1 py-2 rounded-lg font-medium transition-colors ${opponentType === 'internal'
-                                        ? 'bg-primary-500 text-white'
-                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                    ? 'bg-primary-500 text-white'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                                     }`}
                             >
                                 De la Academia
@@ -448,10 +450,10 @@ export default function EditarDueloPage() {
                                     type="button"
                                     onClick={() => setEventType(key)}
                                     className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${eventType === key
-                                            ? key === 'training'
-                                                ? 'bg-primary-500 text-white'
-                                                : 'bg-yellow-500 text-black'
-                                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                        ? key === 'training'
+                                            ? 'bg-primary-500 text-white'
+                                            : 'bg-yellow-500 text-black'
+                                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                                         }`}
                                 >
                                     {label}
@@ -665,6 +667,43 @@ export default function EditarDueloPage() {
                                     </label>
                                 </div>
                             </div>
+
+                            {/* Selector para empate exacto en shoot-off */}
+                            {ourShootOffScore === opponentShootOffScore &&
+                                ourShootOffScore > 0 &&
+                                !ourShootOffIsX &&
+                                !opponentShootOffIsX && (
+                                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 space-y-3">
+                                        <p className="text-sm text-yellow-400 font-medium">
+                                            ⚠️ Empate en Shoot-Off ({ourShootOffScore} - {opponentShootOffScore})
+                                        </p>
+                                        <p className="text-xs text-slate-400">
+                                            Selecciona quién quedó más cerca del centro (flecha más adentro):
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setClosestToCenter('our')}
+                                                className={`py-2 px-4 rounded-lg font-medium transition-all ${closestToCenter === 'our'
+                                                        ? 'bg-green-500 text-white'
+                                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                                    }`}
+                                            >
+                                                Nuestro ({ourShootOffScore}+)
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setClosestToCenter('opponent')}
+                                                className={`py-2 px-4 rounded-lg font-medium transition-all ${closestToCenter === 'opponent'
+                                                        ? 'bg-red-500 text-white'
+                                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                                    }`}
+                                            >
+                                                Oponente ({opponentShootOffScore}+)
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                             {duelResult.result && (
                                 <div className={`text-center p-3 rounded-lg ${duelResult.result === 'win' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>

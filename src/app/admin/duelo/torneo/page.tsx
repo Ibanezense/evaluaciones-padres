@@ -42,6 +42,7 @@ interface TournamentDuel {
     opponentShootOffScore: number;
     ourShootOffIsX: boolean;
     opponentShootOffIsX: boolean;
+    closestToCenter: 'our' | 'opponent' | null;
     expanded: boolean;
 }
 
@@ -57,6 +58,7 @@ const createEmptyDuel = (): TournamentDuel => ({
     opponentShootOffScore: 0,
     ourShootOffIsX: false,
     opponentShootOffIsX: false,
+    closestToCenter: null,
     expanded: true,
 });
 
@@ -119,7 +121,8 @@ export default function TorneoPage() {
             ourScore: duel.ourShootOffScore,
             opponentScore: duel.opponentShootOffScore,
             ourIsX: duel.ourShootOffIsX,
-            opponentIsX: duel.opponentShootOffIsX
+            opponentIsX: duel.opponentShootOffIsX,
+            closestToCenter: duel.closestToCenter
         } : undefined;
 
         return {
@@ -656,6 +659,43 @@ export default function TorneoPage() {
                                                             </label>
                                                         </div>
                                                     </div>
+
+                                                    {/* Selector para empate exacto en shoot-off */}
+                                                    {duel.ourShootOffScore === duel.opponentShootOffScore &&
+                                                        duel.ourShootOffScore > 0 &&
+                                                        !duel.ourShootOffIsX &&
+                                                        !duel.opponentShootOffIsX && (
+                                                            <div className="mt-3 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-lg space-y-2">
+                                                                <p className="text-xs text-yellow-400 font-medium">
+                                                                    ⚠️ Empate ({duel.ourShootOffScore} - {duel.opponentShootOffScore})
+                                                                </p>
+                                                                <p className="text-xs text-slate-500">
+                                                                    ¿Quién más cerca del centro?
+                                                                </p>
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => updateDuel(duel.id, 'closestToCenter', 'our')}
+                                                                        className={`py-1.5 px-3 rounded text-xs font-medium transition-all ${duel.closestToCenter === 'our'
+                                                                                ? 'bg-green-500 text-white'
+                                                                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                                                            }`}
+                                                                    >
+                                                                        Nuestro ({duel.ourShootOffScore}+)
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => updateDuel(duel.id, 'closestToCenter', 'opponent')}
+                                                                        className={`py-1.5 px-3 rounded text-xs font-medium transition-all ${duel.closestToCenter === 'opponent'
+                                                                                ? 'bg-red-500 text-white'
+                                                                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                                                            }`}
+                                                                    >
+                                                                        Oponente ({duel.opponentShootOffScore}+)
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                 </div>
                                             )}
 
