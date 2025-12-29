@@ -3,15 +3,28 @@
 import { useState } from 'react';
 import { supabase, ClassAttendance, ATTENDANCE_STATUS, AttendanceStatus, BowType } from '@/lib/supabase';
 import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, CalendarClock, Loader2 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, getDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-// Horarios disponibles
-const AVAILABLE_TIMES = [
+// Horarios por día de la semana
+const WEEKDAY_TIMES = [
+    { value: '08:30', label: '8:30 AM' },
+    { value: '10:00', label: '10:00 AM' },
+    { value: '11:30', label: '11:30 AM' },
+];
+
+const WEEKEND_TIMES = [
     { value: '10:00', label: '10:00 AM' },
     { value: '11:30', label: '11:30 AM' },
     { value: '13:00', label: '1:00 PM' },
 ];
+
+// Función para obtener horarios según la fecha
+const getAvailableTimes = (dateString: string) => {
+    const date = parseISO(dateString);
+    const dayOfWeek = getDay(date); // 0 = Domingo, 6 = Sábado
+    return (dayOfWeek === 0 || dayOfWeek === 6) ? WEEKEND_TIMES : WEEKDAY_TIMES;
+};
 
 interface AttendanceCardTutorProps {
     attendance: ClassAttendance;
@@ -41,9 +54,10 @@ const statusTextColors: Record<AttendanceStatus, string> = {
 };
 
 // Formatear hora para display
-const formatTimeDisplay = (time: string | null) => {
+const formatTimeDisplay = (time: string | null, dateString: string) => {
     if (!time) return '--:--';
-    const found = AVAILABLE_TIMES.find(t => t.value === time.slice(0, 5));
+    const times = getAvailableTimes(dateString);
+    const found = times.find(t => t.value === time.slice(0, 5));
     return found ? found.label : time.slice(0, 5);
 };
 
@@ -144,7 +158,7 @@ export default function AttendanceCardTutor({ attendance, bowType, onUpdate }: A
                         className="w-full text-sm bg-slate-800/50 border border-slate-600 rounded px-3 py-2 text-slate-300 cursor-pointer"
                     >
                         <option value="" className="bg-slate-800">Seleccionar hora</option>
-                        {AVAILABLE_TIMES.map(t => (
+                        {getAvailableTimes(localDate).map(t => (
                             <option key={t.value} value={t.value} className="bg-slate-800">
                                 {t.label}
                             </option>
@@ -154,7 +168,7 @@ export default function AttendanceCardTutor({ attendance, bowType, onUpdate }: A
                     <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-slate-400" />
                         <span className="text-sm text-slate-300">
-                            {formatTimeDisplay(attendance.class_time)}
+                            {formatTimeDisplay(attendance.class_time, attendance.class_date)}
                         </span>
                     </div>
                 )}

@@ -3,13 +3,27 @@
 import { useState } from 'react';
 import { supabase, ClassAttendance, ATTENDANCE_STATUS, AttendanceStatus, Student } from '@/lib/supabase';
 import { Calendar, Clock, Trash2, User, Loader2 } from 'lucide-react';
+import { parseISO, getDay } from 'date-fns';
 
-// Horarios disponibles
-const AVAILABLE_TIMES = [
+// Horarios por día de la semana
+const WEEKDAY_TIMES = [
+    { value: '08:30', label: '8:30 AM' },
+    { value: '10:00', label: '10:00 AM' },
+    { value: '11:30', label: '11:30 AM' },
+];
+
+const WEEKEND_TIMES = [
     { value: '10:00', label: '10:00 AM' },
     { value: '11:30', label: '11:30 AM' },
     { value: '13:00', label: '1:00 PM' },
 ];
+
+// Función para obtener horarios según la fecha
+const getAvailableTimes = (dateString: string) => {
+    const date = parseISO(dateString);
+    const dayOfWeek = getDay(date); // 0 = Domingo, 6 = Sábado
+    return (dayOfWeek === 0 || dayOfWeek === 6) ? WEEKEND_TIMES : WEEKDAY_TIMES;
+};
 
 interface AttendanceCardAdminProps {
     attendance: ClassAttendance;
@@ -223,7 +237,7 @@ export default function AttendanceCardAdmin({
                     className="text-xs bg-transparent border-none p-0 text-slate-300 w-full"
                 >
                     <option value="" className="bg-slate-800">Seleccionar</option>
-                    {AVAILABLE_TIMES.map(t => (
+                    {getAvailableTimes(localDate).map(t => (
                         <option key={t.value} value={t.value} className="bg-slate-800">
                             {t.label}
                         </option>
