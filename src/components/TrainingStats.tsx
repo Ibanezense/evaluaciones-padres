@@ -304,34 +304,53 @@ export default function TrainingStats({ controls }: TrainingStatsProps) {
             )}
 
 
-            {/* Récords de la Academia - Mejores puntajes por distancia */}
+            {/* Récords Personales - Mejores puntajes por distancia */}
             {Object.keys(stats.bestByDistance).length > 0 && (
                 <div className="glass-card p-4">
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
                         <Trophy className="w-5 h-5 text-yellow-500" />
-                        Récords de la Academia
+                        Récords Personales
                     </h3>
 
                     <div className="space-y-2">
                         {Object.entries(stats.bestByDistance)
                             .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                            .map(([distance, record]) => (
-                                <div
-                                    key={distance}
-                                    className="flex items-center justify-between bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3"
-                                >
-                                    <div>
-                                        <div className="text-lg font-bold text-yellow-400">{record.total_score} pts</div>
-                                        <div className="text-sm text-slate-400">
-                                            {distance}m • {new Date(record.control_date).toLocaleDateString('es-ES')}
+                            .map(([distance, record]) => {
+                                // Determinar el tipo de evento para mostrar
+                                const getEventLabel = (eventType: string) => {
+                                    switch (eventType) {
+                                        case 'training': return { label: 'Entrenamiento', color: 'bg-slate-600 text-slate-300' };
+                                        case 'internal': return { label: 'Torneo Interno', color: 'bg-blue-500/20 text-blue-400' };
+                                        case 'local': return { label: 'Torneo Local', color: 'bg-green-500/20 text-green-400' };
+                                        case 'regional': return { label: 'Torneo Regional', color: 'bg-purple-500/20 text-purple-400' };
+                                        case 'national': return { label: 'Campeonato Nacional', color: 'bg-yellow-500/20 text-yellow-400' };
+                                        case 'international': return { label: 'Campeonato Internacional', color: 'bg-red-500/20 text-red-400' };
+                                        default: return { label: 'Control', color: 'bg-slate-600 text-slate-300' };
+                                    }
+                                };
+                                const eventInfo = getEventLabel(record.event_type);
+
+                                return (
+                                    <div
+                                        key={distance}
+                                        className="flex items-center justify-between bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3"
+                                    >
+                                        <div>
+                                            <div className="text-lg font-bold text-yellow-400">{record.total_score} pts</div>
+                                            <div className="text-sm text-slate-400">
+                                                {distance}m • {new Date(record.control_date).toLocaleDateString('es-ES')}
+                                            </div>
+                                            <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${eventInfo.color}`}>
+                                                {eventInfo.label}
+                                            </span>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-sm text-slate-400">Arrow Avg</div>
+                                            <div className="text-white font-medium">{record.arrow_average}</div>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="text-sm text-slate-400">Arrow Avg</div>
-                                        <div className="text-white font-medium">{record.arrow_average}</div>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                     </div>
                 </div>
             )}
