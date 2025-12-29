@@ -240,7 +240,9 @@ export interface StudentBadge {
 // Etapas de torneo para duelos
 export const TOURNAMENT_STAGES = {
     '64': '64vos',
+    '48': '48vos',
     '32': '32vos',
+    '24': '24vos',
     '16': '16avos',
     '8': '8vos',
     '4': '4tos',
