@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS duels (
     opponent_type VARCHAR(10) NOT NULL CHECK (opponent_type IN ('internal', 'external')),
     opponent_student_id UUID REFERENCES students(id) ON DELETE SET NULL,
     opponent_name VARCHAR(255),
+    opponent_club VARCHAR(255),
+    opponent_country VARCHAR(100),
     
     -- Tipo de evento (igual que controles)
     event_type VARCHAR(20) NOT NULL DEFAULT 'training' 

@@ -36,6 +36,20 @@ export default function TrainingControlHistory({
         return `${pos}°`;
     };
 
+    // Calcular el récord real por distancia (el puntaje más alto)
+    const highestScoreByDistance = controls.reduce((acc, control) => {
+        const distance = control.distance;
+        if (!acc[distance] || control.total_score > acc[distance]) {
+            acc[distance] = control.total_score;
+        }
+        return acc;
+    }, {} as Record<number, number>);
+
+    // Función para verificar si un control es récord
+    const isRecord = (control: TrainingControl) => {
+        return control.total_score === highestScoreByDistance[control.distance];
+    };
+
     if (controls.length === 0) {
         return (
             <div className="glass-card p-6 text-center">
@@ -99,7 +113,7 @@ export default function TrainingControlHistory({
                                                 {formatPosition(control.position)}
                                             </span>
                                         )}
-                                        {control.is_academy_record && (
+                                        {isRecord(control) && (
                                             <span className="flex items-center gap-1 text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">
                                                 <Trophy className="w-3 h-3" />
                                                 Récord

@@ -135,7 +135,18 @@ export default function TrainingStats({ controls }: TrainingStatsProps) {
 
                 {stats.lastControl && (
                     <div className="bg-slate-800/50 rounded-lg p-4 mb-4">
-                        <div className="text-sm text-slate-400 mb-1">Último control</div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm text-slate-400">Último puntaje</span>
+                            {stats.lastControl.event_type && stats.lastControl.event_type !== 'training' ? (
+                                <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">
+                                    Torneo
+                                </span>
+                            ) : (
+                                <span className="text-xs bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded-full">
+                                    Entrenamiento
+                                </span>
+                            )}
+                        </div>
                         <div className="flex items-center justify-between">
                             <div>
                                 <span className="text-2xl font-bold text-primary-500">{stats.lastControl.total_score}</span>
@@ -148,9 +159,6 @@ export default function TrainingStats({ controls }: TrainingStatsProps) {
                         </div>
                         {stats.lastControl.event_type && stats.lastControl.event_type !== 'training' && (
                             <div className="mt-2 flex flex-wrap items-center gap-2">
-                                <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">
-                                    {EVENT_TYPES[stats.lastControl.event_type as keyof typeof EVENT_TYPES]}
-                                </span>
                                 <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
                                     Etapa Clasificatoria
                                 </span>
@@ -165,50 +173,56 @@ export default function TrainingStats({ controls }: TrainingStatsProps) {
                 )}
 
                 {/* Mejor puntaje por periodo */}
-                <div className="mb-3">
-                    <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Mejor Puntaje</div>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                        <div className="bg-slate-800/50 rounded-lg p-3">
-                            <div className="text-xs text-slate-400 mb-1">Este año</div>
-                            <div className="text-xl font-bold text-primary-500">{stats.thisYear.best || '-'}</div>
-                            <div className="text-xs text-slate-500">{stats.thisYear.count} ctrl</div>
+                <div className="mb-4">
+                    <div className="text-xs text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <Trophy className="w-4 h-4 text-yellow-500" />
+                        Mejor Puntaje
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <div className="glass-card p-4 text-center">
+                            <div className="text-xs text-slate-400 mb-2">Este año</div>
+                            <div className="text-2xl font-bold text-primary-500">{stats.thisYear.best || '-'}</div>
+                            <div className="text-xs text-slate-500 mt-1">{stats.thisYear.count} ctrl</div>
                         </div>
-                        <div className="bg-slate-800/50 rounded-lg p-3">
-                            <div className="text-xs text-slate-400 mb-1">Año pasado</div>
-                            <div className="text-xl font-bold text-white">{stats.lastYear.best || '-'}</div>
-                            <div className="text-xs text-slate-500">{stats.lastYear.count} ctrl</div>
+                        <div className="glass-card p-4 text-center">
+                            <div className="text-xs text-slate-400 mb-2">Año pasado</div>
+                            <div className="text-2xl font-bold text-white">{stats.lastYear.best || '-'}</div>
+                            <div className="text-xs text-slate-500 mt-1">{stats.lastYear.count} ctrl</div>
                         </div>
-                        <div className="bg-slate-800/50 rounded-lg p-3">
-                            <div className="text-xs text-slate-400 mb-1">Carrera</div>
-                            <div className="text-xl font-bold text-yellow-400">{stats.career.best}</div>
-                            <div className="text-xs text-slate-500">{stats.career.count} ctrl</div>
+                        <div className="glass-card p-4 text-center border border-yellow-500/30">
+                            <div className="text-xs text-yellow-400 mb-2">Carrera</div>
+                            <div className="text-2xl font-bold text-yellow-400">{stats.career.best}</div>
+                            <div className="text-xs text-slate-500 mt-1">{stats.career.count} ctrl</div>
                         </div>
                     </div>
                 </div>
 
                 {/* Arrow Average promedio por periodo */}
                 <div>
-                    <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Arrow Average (promedio)</div>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                        <div className="bg-slate-800/50 rounded-lg p-3">
-                            <div className="text-xs text-slate-400 mb-1">Este año</div>
-                            <div className="text-lg font-bold text-primary-500">{stats.thisYear.count > 0 ? stats.thisYear.avgArrow : '-'}</div>
+                    <div className="text-xs text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <Target className="w-4 h-4 text-primary-500" />
+                        Arrow Average (Promedio)
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <div className="glass-card p-4 text-center">
+                            <div className="text-xs text-slate-400 mb-2">Este año</div>
+                            <div className="text-xl font-bold text-primary-500">{stats.thisYear.count > 0 ? stats.thisYear.avgArrow : '-'}</div>
                         </div>
-                        <div className="bg-slate-800/50 rounded-lg p-3">
-                            <div className="text-xs text-slate-400 mb-1">Año pasado</div>
-                            <div className="text-lg font-bold text-white">{stats.lastYear.count > 0 ? stats.lastYear.avgArrow : '-'}</div>
+                        <div className="glass-card p-4 text-center">
+                            <div className="text-xs text-slate-400 mb-2">Año pasado</div>
+                            <div className="text-xl font-bold text-white">{stats.lastYear.count > 0 ? stats.lastYear.avgArrow : '-'}</div>
                         </div>
-                        <div className="bg-slate-800/50 rounded-lg p-3">
-                            <div className="text-xs text-slate-400 mb-1">Carrera</div>
-                            <div className="text-lg font-bold text-white">{stats.career.avgArrow}</div>
+                        <div className="glass-card p-4 text-center">
+                            <div className="text-xs text-slate-400 mb-2">Carrera</div>
+                            <div className="text-xl font-bold text-white">{stats.career.avgArrow}</div>
                         </div>
                     </div>
                 </div>
 
                 {/* Cambio porcentual */}
                 {stats.lastYear.count > 0 && stats.thisYear.count > 0 && (
-                    <div className="mt-3 flex items-center justify-center gap-4 text-sm">
-                        <span className={`flex items-center gap-1 ${parseFloat(stats.changes.best) >= 0 ? 'text-green-400' : 'text-red-400'
+                    <div className="mt-4 text-center">
+                        <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ${parseFloat(stats.changes.best) >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
                             }`}>
                             {parseFloat(stats.changes.best) >= 0 ? '↑' : '↓'}
                             {Math.abs(parseFloat(stats.changes.best))}% mejor puntaje vs año anterior
@@ -228,16 +242,16 @@ export default function TrainingStats({ controls }: TrainingStatsProps) {
                         📋 Etapa Clasificatoria
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="grid grid-cols-3 gap-3">
                         {/* Este año */}
-                        <div className="bg-slate-800/50 rounded-lg p-3">
-                            <div className="text-xs text-slate-400 mb-1">Este año</div>
+                        <div className="bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 text-center">
+                            <div className="text-xs text-slate-400 mb-2">Este año</div>
                             {stats.thisYear.bestPosition ? (
                                 <>
-                                    <div className="text-xl font-bold text-primary-500">
+                                    <div className="text-2xl font-bold text-primary-500">
                                         {formatPosition(stats.thisYear.bestPosition.position!)}
                                     </div>
-                                    <div className="text-xs text-slate-500">
+                                    <div className="text-xs text-slate-500 mt-1">
                                         a {stats.thisYear.bestPosition.distance}m
                                     </div>
                                 </>
@@ -247,14 +261,14 @@ export default function TrainingStats({ controls }: TrainingStatsProps) {
                         </div>
 
                         {/* Año pasado */}
-                        <div className="bg-slate-800/50 rounded-lg p-3">
-                            <div className="text-xs text-slate-400 mb-1">Año pasado</div>
+                        <div className="bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 text-center">
+                            <div className="text-xs text-slate-400 mb-2">Año pasado</div>
                             {stats.lastYear.bestPosition ? (
                                 <>
-                                    <div className="text-xl font-bold text-white">
+                                    <div className="text-2xl font-bold text-white">
                                         {formatPosition(stats.lastYear.bestPosition.position!)}
                                     </div>
-                                    <div className="text-xs text-slate-500">
+                                    <div className="text-xs text-slate-500 mt-1">
                                         a {stats.lastYear.bestPosition.distance}m
                                     </div>
                                 </>
@@ -264,14 +278,14 @@ export default function TrainingStats({ controls }: TrainingStatsProps) {
                         </div>
 
                         {/* Carrera */}
-                        <div className="bg-slate-800/50 rounded-lg p-3">
-                            <div className="text-xs text-slate-400 mb-1">Carrera</div>
+                        <div className="bg-slate-800/80 backdrop-blur-sm border border-yellow-500/40 rounded-xl p-4 text-center">
+                            <div className="text-xs text-yellow-400 mb-2">Carrera</div>
                             {stats.career.bestPosition ? (
                                 <>
-                                    <div className="text-xl font-bold text-yellow-400">
+                                    <div className="text-2xl font-bold text-yellow-400">
                                         {formatPosition(stats.career.bestPosition.position!)}
                                     </div>
-                                    <div className="text-xs text-slate-500">
+                                    <div className="text-xs text-slate-500 mt-1">
                                         a {stats.career.bestPosition.distance}m
                                     </div>
                                 </>

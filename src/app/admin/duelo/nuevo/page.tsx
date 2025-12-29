@@ -368,68 +368,6 @@ export default function NuevoDueloPage() {
                             )}
                         </div>
 
-                        {/* Tipo de evento */}
-                        <div className="glass-card p-4 space-y-4">
-                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                                <Award className="w-5 h-5 text-yellow-500" />
-                                Tipo de Evento
-                            </h3>
-
-                            <div className="grid grid-cols-2 gap-2">
-                                {(Object.entries(EVENT_TYPES) as [EventType, string][]).map(([key, label]) => (
-                                    <button
-                                        key={key}
-                                        type="button"
-                                        onClick={() => setEventType(key)}
-                                        className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${eventType === key
-                                            ? key === 'training'
-                                                ? 'bg-primary-500 text-white'
-                                                : 'bg-yellow-500 text-black'
-                                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                            }`}
-                                    >
-                                        {label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {isTournament && (
-                                <div className="space-y-3 pt-3 border-t border-slate-700">
-                                    <input
-                                        type="text"
-                                        value={tournamentName}
-                                        onChange={(e) => setTournamentName(e.target.value)}
-                                        placeholder="Nombre del torneo *"
-                                    />
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-xs text-slate-400 mb-1">Etapa</label>
-                                            <select
-                                                value={tournamentStage}
-                                                onChange={(e) => setTournamentStage(e.target.value as TournamentStage)}
-                                            >
-                                                <option value="">Seleccionar</option>
-                                                {(Object.entries(TOURNAMENT_STAGES) as [TournamentStage, string][]).map(([key, label]) => (
-                                                    <option key={key} value={key}>{label}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-slate-400 mb-1">Posición Final</label>
-                                            <input
-                                                type="number"
-                                                value={tournamentPosition}
-                                                onChange={(e) => setTournamentPosition(e.target.value === '' ? '' : parseInt(e.target.value))}
-                                                min="1"
-                                                placeholder="Ej: 1"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
                         {/* Fecha y distancia */}
                         <div className="glass-card p-4 space-y-4">
                             <div className="grid grid-cols-2 gap-4">

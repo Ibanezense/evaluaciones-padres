@@ -260,6 +260,8 @@ export interface Duel {
     opponent_type: 'internal' | 'external';
     opponent_student_id: string | null;
     opponent_name: string | null;
+    opponent_club: string | null;
+    opponent_country: string | null;
     event_type: EventType;
     tournament_name: string | null;
     tournament_stage: TournamentStage | null;

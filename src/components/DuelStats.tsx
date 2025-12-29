@@ -75,30 +75,30 @@ export default function DuelStats({ duels }: DuelStatsProps) {
             };
         };
 
-        // Calcular oponentes más frecuentes
+        // Calcular oponentes más frecuentes (solo con nombres válidos)
         const opponentMap = new Map<string, { name: string; wins: number; losses: number; total: number }>();
 
         currentDuels.forEach(d => {
-            const name = d.opponent_type === 'internal' && d.opponent_student_id
-                ? d.opponent_student_id
-                : d.opponent_name || 'Desconocido';
+            // Solo incluir oponentes con nombre real
+            const displayName = d.opponent_name?.trim();
+            if (!displayName) return; // Saltar si no hay nombre de oponente
 
-            const displayName = d.opponent_name || 'Oponente interno';
+            const key = displayName.toLowerCase(); // Usar nombre como clave normalizada
 
-            if (!opponentMap.has(name)) {
-                opponentMap.set(name, { name: displayName, wins: 0, losses: 0, total: 0 });
+            if (!opponentMap.has(key)) {
+                opponentMap.set(key, { name: displayName, wins: 0, losses: 0, total: 0 });
             }
 
-            const opponent = opponentMap.get(name)!;
+            const opponent = opponentMap.get(key)!;
             opponent.total += 1;
             if (d.result === 'win') opponent.wins += 1;
             else opponent.losses += 1;
         });
 
         const opponents = Array.from(opponentMap.values());
-        const mostFaced = opponents.sort((a, b) => b.total - a.total)[0] || null;
-        const mostWinsAgainst = opponents.sort((a, b) => b.wins - a.wins)[0] || null;
-        const mostLossesAgainst = opponents.sort((a, b) => b.losses - a.losses)[0] || null;
+        const mostFaced = opponents.length > 0 ? opponents.sort((a, b) => b.total - a.total)[0] : null;
+        const mostWinsAgainst = opponents.length > 0 ? [...opponents].sort((a, b) => b.wins - a.wins)[0] : null;
+        const mostLossesAgainst = opponents.length > 0 ? [...opponents].sort((a, b) => b.losses - a.losses)[0] : null;
 
         return {
             thisYear: calculatePeriodStats(thisYearDuels),
@@ -217,8 +217,8 @@ export default function DuelStats({ duels }: DuelStatsProps) {
                     <button
                         onClick={() => { setCategory('official'); setSelectedPeriod('thisYear'); }}
                         className={`flex-1 py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${category === 'official'
-                                ? 'bg-yellow-500 text-black'
-                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            ? 'bg-yellow-500 text-black'
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                             }`}
                     >
                         <Trophy className="w-4 h-4" />
@@ -233,8 +233,8 @@ export default function DuelStats({ duels }: DuelStatsProps) {
                     <button
                         onClick={() => { setCategory('training'); setSelectedPeriod('thisYear'); }}
                         className={`flex-1 py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${category === 'training'
-                                ? 'bg-primary-500 text-white'
-                                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                            ? 'bg-primary-500 text-white'
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                             }`}
                     >
                         <Target className="w-4 h-4" />
@@ -263,8 +263,8 @@ export default function DuelStats({ duels }: DuelStatsProps) {
                             <button
                                 onClick={() => setSelectedPeriod('thisYear')}
                                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${selectedPeriod === 'thisYear'
-                                        ? 'bg-slate-700 text-white'
-                                        : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
+                                    ? 'bg-slate-700 text-white'
+                                    : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
                                     }`}
                             >
                                 Este Año
@@ -272,8 +272,8 @@ export default function DuelStats({ duels }: DuelStatsProps) {
                             <button
                                 onClick={() => setSelectedPeriod('lastYear')}
                                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${selectedPeriod === 'lastYear'
-                                        ? 'bg-slate-700 text-white'
-                                        : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
+                                    ? 'bg-slate-700 text-white'
+                                    : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
                                     }`}
                             >
                                 Año Anterior
@@ -281,8 +281,8 @@ export default function DuelStats({ duels }: DuelStatsProps) {
                             <button
                                 onClick={() => setSelectedPeriod('career')}
                                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${selectedPeriod === 'career'
-                                        ? 'bg-slate-700 text-white'
-                                        : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
+                                    ? 'bg-slate-700 text-white'
+                                    : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
                                     }`}
                             >
                                 Carrera
@@ -291,17 +291,17 @@ export default function DuelStats({ duels }: DuelStatsProps) {
 
                         {/* Resumen rápido */}
                         <div className="grid grid-cols-2 gap-3 mb-4">
-                            <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                                <div className="text-xs text-slate-400 mb-1">Matches</div>
-                                <div className="text-xl font-bold">
+                            <div className="bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 text-center">
+                                <div className="text-xs text-slate-400 mb-2">Matches</div>
+                                <div className="text-2xl font-bold">
                                     <span className="text-green-400">{stats[selectedPeriod].wins}</span>
                                     <span className="text-slate-500"> / </span>
                                     <span className="text-red-400">{stats[selectedPeriod].losses}</span>
                                 </div>
                             </div>
-                            <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                                <div className="text-xs text-slate-400 mb-1">Tie Breaks</div>
-                                <div className="text-xl font-bold">
+                            <div className="bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 text-center">
+                                <div className="text-xs text-slate-400 mb-2">Tie Breaks</div>
+                                <div className="text-2xl font-bold">
                                     <span className="text-green-400">{stats[selectedPeriod].shootOffWins}</span>
                                     <span className="text-slate-500"> / </span>
                                     <span className="text-red-400">{stats[selectedPeriod].shootOffLosses}</span>
@@ -329,20 +329,23 @@ export default function DuelStats({ duels }: DuelStatsProps) {
             {/* Mejor ranking - Solo para oficiales */}
             {category === 'official' && stats && (
                 <div className="glass-card p-4">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2 mb-2">
                         <Medal className="w-5 h-5 text-yellow-500" />
-                        Mejor Ranking en Torneos
+                        Mejor Posición en Torneos
                     </h3>
+                    <div className="text-xs text-blue-400 mb-4 flex items-center gap-1">
+                        📋 Etapa Clasificatoria
+                    </div>
 
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                        <div className="bg-slate-800/50 rounded-lg p-3">
-                            <div className="text-xs text-slate-400 mb-1">Este año</div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 text-center">
+                            <div className="text-xs text-slate-400 mb-2">Este año</div>
                             {stats.thisYear.bestRanking ? (
                                 <>
-                                    <div className="text-xl font-bold text-primary-500">
+                                    <div className="text-2xl font-bold text-primary-500">
                                         {formatPosition(stats.thisYear.bestRanking.tournament_position!)}
                                     </div>
-                                    <div className="text-xs text-slate-500">
+                                    <div className="text-xs text-slate-500 mt-1">
                                         a {stats.thisYear.bestRanking.distance}m
                                     </div>
                                 </>
@@ -351,14 +354,14 @@ export default function DuelStats({ duels }: DuelStatsProps) {
                             )}
                         </div>
 
-                        <div className="bg-slate-800/50 rounded-lg p-3">
-                            <div className="text-xs text-slate-400 mb-1">Año pasado</div>
+                        <div className="bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 text-center">
+                            <div className="text-xs text-slate-400 mb-2">Año pasado</div>
                             {stats.lastYear.bestRanking ? (
                                 <>
-                                    <div className="text-xl font-bold text-white">
+                                    <div className="text-2xl font-bold text-white">
                                         {formatPosition(stats.lastYear.bestRanking.tournament_position!)}
                                     </div>
-                                    <div className="text-xs text-slate-500">
+                                    <div className="text-xs text-slate-500 mt-1">
                                         a {stats.lastYear.bestRanking.distance}m
                                     </div>
                                 </>
@@ -367,14 +370,14 @@ export default function DuelStats({ duels }: DuelStatsProps) {
                             )}
                         </div>
 
-                        <div className="bg-slate-800/50 rounded-lg p-3">
-                            <div className="text-xs text-slate-400 mb-1">Carrera</div>
+                        <div className="bg-slate-800/80 backdrop-blur-sm border border-yellow-500/40 rounded-xl p-4 text-center">
+                            <div className="text-xs text-yellow-400 mb-2">Carrera</div>
                             {stats.career.bestRanking ? (
                                 <>
-                                    <div className="text-xl font-bold text-yellow-400">
+                                    <div className="text-2xl font-bold text-yellow-400">
                                         {formatPosition(stats.career.bestRanking.tournament_position!)}
                                     </div>
-                                    <div className="text-xs text-slate-500">
+                                    <div className="text-xs text-slate-500 mt-1">
                                         a {stats.career.bestRanking.distance}m
                                     </div>
                                 </>

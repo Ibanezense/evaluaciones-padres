@@ -15,6 +15,7 @@ import DuelStats from '@/components/DuelStats';
 import BadgeAssignModal from '@/components/BadgeAssignModal';
 import StudentFormModal from '@/components/StudentFormModal';
 import AttendanceCardAdmin from '@/components/AttendanceCardAdmin';
+import DuelTypeSelector from '@/components/DuelTypeSelector';
 import { ArrowLeft, Loader2, Eye, TrendingUp, Target, ClipboardCheck, Plus, Edit, Swords, Award, X, Calendar, Hash, CalendarClock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -35,6 +36,7 @@ export default function PreviewAlumnoPage() {
     const [loading, setLoading] = useState(true);
     const [showBadgeModal, setShowBadgeModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showDuelModal, setShowDuelModal] = useState(false);
     const [attendances, setAttendances] = useState<ClassAttendance[]>([]);
 
     useEffect(() => {
@@ -195,13 +197,13 @@ export default function PreviewAlumnoPage() {
                         <Target className="w-4 h-4" />
                         Control
                     </Link>
-                    <Link
-                        href={`/admin/duelo/nuevo?studentId=${student.id}`}
+                    <button
+                        onClick={() => setShowDuelModal(true)}
                         className="btn btn-secondary text-sm py-2"
                     >
                         <Swords className="w-4 h-4" />
                         Duelo
-                    </Link>
+                    </button>
                     <Link
                         href={`/admin/nueva?studentId=${student.id}`}
                         className="btn btn-secondary text-sm py-2"
@@ -553,6 +555,13 @@ export default function PreviewAlumnoPage() {
                     setShowEditModal(false);
                 }}
                 student={student}
+            />
+
+            {/* Modal para seleccionar tipo de duelo */}
+            <DuelTypeSelector
+                studentId={student.id}
+                isOpen={showDuelModal}
+                onClose={() => setShowDuelModal(false)}
             />
         </main>
     );
